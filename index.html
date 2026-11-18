@@ -949,8 +949,16 @@ function tick(now){
 setMode('dji','angle');renderRadio();requestAnimationFrame(tick);
 })();
 </script>
-<style id="lesson-width-consistency">
-/* Match lessons outside the padded main to Lessons 1 and 2. */
-#stabilization,#feedback,#failure,#freeflight{width:calc(100% - 40px);max-width:1060px;margin:14px auto;min-width:0}
+<style id="responsive-width-preview">
+/* Match the actual main layout used by Lesson 1: max-width 1100px, 20px side padding. */
+#stabilization,#feedback,#failure,#freeflight{box-sizing:border-box;width:calc(100% - 40px);max-width:1060px;margin:14px auto;min-width:0}
+#stabilization > *,#feedback > *,#failure > *,#freeflight > *{max-width:100%;min-width:0}
+/* Prevent grids and canvases from forcing a lesson wider than its parent. */
+#stabilization .stabgrid,#feedback .feedback-grid,#failure .failure-grid,#freeflight .sim-layout{min-width:0;max-width:100%}
+#stabilization canvas,#feedback canvas,#failure canvas,#freeflight canvas{max-width:100%}
 @media(max-width:600px){#stabilization,#feedback,#failure,#freeflight{width:calc(100% - 24px)}}
+.student-concept{margin:12px 0 16px;padding:12px 16px;border:1px solid #46768b;border-left:4px solid #79d9be;border-radius:10px;background:#173047;color:#dceaf5;line-height:1.55}
+.student-concept>strong{display:block;color:#8ee8ca;font-size:15px;margin-bottom:5px}
+.student-concept p{margin:0;font-size:14px;line-height:1.55}
+.student-concept p strong{color:#f1f7fb}
 </style>
