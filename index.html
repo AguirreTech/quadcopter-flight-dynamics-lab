@@ -949,3 +949,8 @@ function tick(now){
 setMode('dji','angle');renderRadio();requestAnimationFrame(tick);
 })();
 </script>
+<style id="lesson-width-consistency">
+/* Match lessons outside the padded main to Lessons 1 and 2. */
+#stabilization,#feedback,#failure,#freeflight{width:calc(100% - 40px);max-width:1060px;margin:14px auto;min-width:0}
+@media(max-width:600px){#stabilization,#feedback,#failure,#freeflight{width:calc(100% - 24px)}}
+</style>
