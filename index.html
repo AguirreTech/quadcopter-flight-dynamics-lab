@@ -1,0 +1,938 @@
+<style>
+</style><style>
+.sim-help-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:800;background:#294e65;color:#f2fbff;border:2px solid #86b9ce;cursor:pointer;padding:0}
+.sim-help-button:hover,.sim-help-button:focus-visible{background:#287b84;outline-offset:3px}
+.sim-input-details{margin:-5px 0 13px;padding:13px 16px;background:#102b40;border:1px solid #65889e;border-radius:10px;color:#e5f2f9;line-height:1.55}
+.sim-input-details p{margin:6px 0 0}
+.sim-input-details kbd{display:inline-block;background:#304b62;border:1px solid #7e9db1;border-radius:4px;padding:1px 6px;margin:0 2px;font:600 13px system-ui;color:white}
+</style><style>
+/* Responsive guardrails across every existing lesson */
+*,*::before,*::after{box-sizing:border-box}
+html{max-width:100%;overflow-x:clip}
+body{max-width:100%;overflow-x:clip}
+main,section,nav,.views,.stabgrid,.feedback-grid,.failgrid,.pid-pilot-grid,.pid-tune-grid,.tilt-learning-grid{min-width:0;max-width:100%}
+section canvas{max-width:100%;height:auto}
+section svg{max-width:100%;height:auto}
+section img{max-width:100%;height:auto}
+section input[type=range]{max-width:100%;min-width:0}
+section .pid-panel,section .failpanel,section .sim-stick-panel,section .sim-view-panel{min-width:0;overflow-wrap:anywhere}
+nav{display:flex;flex-wrap:wrap;gap:6px}
+button{max-width:100%}
+.pid-pilot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pid-tune-grid{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.tilt-learning-grid{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+@media(max-width:1050px){.pid-pilot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pid-pilot-grid>.pid-panel:first-child{grid-column:1/-1;grid-row:auto}.pid-tune-grid{grid-template-columns:1fr}}
+@media(max-width:740px){.pid-pilot-grid,.pid-tune-grid,.tilt-learning-grid,.stabgrid,.feedback-grid,.failgrid,.views{grid-template-columns:minmax(0,1fr)!important}.pid-pilot-grid>.pid-panel:first-child{grid-column:auto}.pid-panel{padding:12px!important}nav button{flex:1 1 auto}}
+[hidden]{display:none!important}
+/* Free-flight section */
+.sim-toolbar,.sim-mode-group,.sim-presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sim-toolbar{margin:14px 0;justify-content:space-between}
+.sim-mode-group{padding:5px;background:#172e43;border:1px solid #42637a;border-radius:12px}
+.sim-toolbar button,.sim-presets button{border-radius:8px;padding:9px 11px;min-height:38px}
+.sim-selected{background:#117f77!important;color:white!important;border-color:#7be6c6!important}
+.sim-grid{display:grid;grid-template-columns:minmax(260px,.83fr) minmax(0,1.3fr);gap:14px;align-items:start}
+.sim-stick-panel,.sim-view-panel{background:#172e43;border:1px solid #45657b;border-radius:14px;padding:15px;min-width:0}
+.sim-stick-panel h3,.sim-view-panel h3{margin:0 0 6px}
+.sim-hint{font-size:12px;color:#bad0df;line-height:1.5;margin:7px 0 12px}
+.sim-axes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 13px}
+.sim-axes>div,.sim-telemetry>div{background:#0e2639;border:1px solid #34556b;border-radius:8px;padding:8px;min-width:0;text-align:center}
+.sim-axes strong,.sim-telemetry strong{display:block;color:#7be6c6;font-size:16px}
+.sim-axes small,.sim-telemetry small{font-size:11px;color:#c5d8e7}
+.sim-view-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:7px}
+#simStatus{font-size:12px;color:#7be6c6}
+#simCanvas{display:block;width:100%;height:auto;aspect-ratio:880/540;border-radius:10px;background:#0d2133;touch-action:none}
+.sim-telemetry{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}
+.sim-footer{padding:14px;margin-top:14px;border:1px solid #46677d;border-radius:12px;line-height:1.6}
+@media(max-width:1000px){.sim-grid{grid-template-columns:1fr}.sim-stick-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 15px}.sim-stick-panel h3,.sim-stick-panel>p:first-of-type,.sim-stick-panel .sim-presets,.sim-stick-panel>p:last-child{grid-column:1/-1}.sim-stick-panel svg{grid-column:1}.sim-axes{grid-column:2;grid-template-columns:repeat(2,minmax(0,1fr));align-content:center}}
+@media(max-width:600px){.sim-stick-panel{display:block}.sim-axes{grid-template-columns:repeat(4,minmax(0,1fr))}.sim-telemetry{grid-template-columns:repeat(2,minmax(0,1fr))}.sim-toolbar{justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){#simCanvas{scroll-behavior:auto}}
+</style><style>
+.pid-section-heading{margin:18px 0 9px}
+.pid-section-heading h3{font-size:18px;margin:0 0 5px;color:#a5e9d0}
+.pid-section-heading p{font-size:13px;color:#b9ccda;margin:0}
+.pid-pilot-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;align-items:start}
+.pid-pilot-grid .pid-panel{height:100%}
+.pid-pilot-grid .pid-panel h3{font-size:15px}
+.pid-pilot-grid .pid-panel canvas{max-height:235px;object-fit:contain}
+.pid-pilot-grid .pid-panel p{font-size:12px}
+.pid-mode-strip{background:#10283d;border:1px solid #476980;border-radius:9px;padding:9px;margin:8px 0}
+.pid-mode-strip strong{display:block;font-size:12px;margin-bottom:7px}
+.pid-tune-grid{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(300px,1.4fr);gap:12px;align-items:start}
+.pid-compact-note{font-size:12px;color:#a5e9d0}
+.tilt-learning-grid{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(330px,1.4fr);gap:12px;align-items:start;margin:10px 0}
+.tilt-controls-panel,.tilt-diagram-panel{background:#20364d;border:1px solid #405b74;border-radius:12px;padding:14px}
+.tilt-controls-panel label{display:block;margin:9px 0 3px}
+.tilt-controls-panel input{width:100%}
+.tilt-controls-panel .meters{margin-top:10px}
+@media(max-width:1100px){.pid-pilot-grid{grid-template-columns:1fr 1fr}.pid-pilot-grid .pid-panel:first-child{grid-row:span 2}}
+@media(max-width:760px){.pid-pilot-grid,.pid-tune-grid,.tilt-learning-grid{grid-template-columns:1fr}.pid-pilot-grid .pid-panel:first-child{grid-row:auto}.pid-pilot-grid .pid-panel canvas{max-height:none}}
+</style><!DOCTYPE html>
+
+<html lang="en"><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>PS123 Offline Flight Lab · Version 1.6</title><style> *{box-sizing:border-box}body{margin:0;background:#101d30;color:#eef5ff;font:16px system-ui}main{max-width:1100px;margin:auto;padding:20px}h1{margin:0;font-size:28px}h2{font-size:21px}small,p{color:#b9cbe0}button{font:inherit;color:white;background:#243d58;border:1px solid #526d88;border-radius:9px;padding:12px;min-height:44px;margin:3px;touch-action:manipulation}button.active{background:#75dfbe;color:#102b26}section{background:#172a40;border-radius:14px;padding:14px;margin:14px 0}.views{display:grid;grid-template-columns:1fr 1fr;gap:12px}canvas{width:100%;height:auto;background:#122237;border-radius:8px} .meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.meter{background:#233a53;padding:10px;border-radius:8px}.meter b{display:block;font-size:24px}.bar{height:8px;border-radius:4px}input{width:100%;accent-color:#75dfbe;height:40px}nav{margin:12px 0} @media(max-width:600px){.views{grid-template-columns:1fr}.meters{grid-template-columns:repeat(2,1fr)}} .modebar{display:flex;flex-wrap:wrap;gap:6px}.stabgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}.stickbox,.lesson{background:#20364d;padding:15px;border-radius:10px;margin:8px 0}.stickbox label{display:block;margin-bottom:12px}.sticklabels{display:flex;justify-content:space-between;font-size:12px;color:#a9c1d7}.readouts{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.readouts>div{background:#20364d;padding:10px;border-radius:9px;font-size:12px}.readouts strong{display:block;font-size:20px;color:#75dfbe;margin-top:5px}.labnote{font-size:12px;line-height:1.5}.lesson p{line-height:1.5}.equation{background:#0e2032;padding:15px;line-height:2;border-radius:8px;overflow:auto}summary{cursor:pointer;padding:13px;font-weight:650}details{border:1px solid #526d88;border-radius:10px;padding:5px 12px}#stabCanvas{aspect-ratio:5/3}#rollStick{touch-action:pan-y} @media(max-width:750px){.stabgrid{grid-template-columns:1fr}.readouts{grid-template-columns:repeat(3,1fr)}}@media(max-width:420px){.readouts strong{font-size:16px}} </style><style>.feedback-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}.fbpanel{background:#20364d;padding:13px;border-radius:10px}.fbflow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:15px 0}.fbnode{padding:11px 5px;background:#243f57;border:1px solid #53728e;border-radius:9px;text-align:center;font-size:12px}.fbnode b{display:block;color:#75dfbe;font-size:13px;margin-bottom:5px}.fbnode span{font-variant-numeric:tabular-nums}.fbmotor{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fbmotor>div{background:#122237;border-radius:8px;padding:10px}.fbmotor strong{font-size:22px}.fbbar{height:9px;border-radius:5px;background:#506278;margin-top:7px;overflow:hidden}.fbbar>div{height:100%;background:#75dfbe}.fbnote{font-size:12px;color:#b9cbe0;line-height:1.6}.fbstat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.fbstat>div{background:#122237;padding:9px;border-radius:7px;font-size:12px}.fbstat strong{display:block;color:#75dfbe;font-size:19px}.fbrow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.fbrow label{margin-right:6px}.fbquiz{background:#102237;border-radius:10px;padding:13px;margin-top:12px}@media(max-width:720px){.feedback-grid{grid-template-columns:1fr}.fbflow{grid-template-columns:repeat(2,1fr)}}@media(max-width:420px){.fbstat{grid-template-columns:1fr 1fr}}</style>
+<style>
+html{scroll-behavior:smooth}
+body{line-height:1.5}
+#home{background:linear-gradient(145deg,#1d3a55,#14263b);border:1px solid #42617b}
+.hero-eyebrow{font-size:12px;letter-spacing:.12em;color:#83e3c6;font-weight:750}
+.hero-title{font-size:clamp(28px,4vw,44px);line-height:1.15;margin:10px 0;color:#f4f9ff}
+.hero-copy{max-width:720px;color:#c5d8e8}
+.lesson-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:22px 0}
+.lesson-card{background:#213d56;border:1px solid #4c6b82;border-radius:12px;padding:17px;display:flex;flex-direction:column;gap:9px}
+.lesson-card h3{margin:0;font-size:18px}
+.lesson-card p{margin:0;font-size:14px;flex:1}
+.lesson-card button{align-self:start}
+.lesson-number{color:#80e5c5;font-weight:800;font-size:12px;letter-spacing:.1em}
+#tabHome{background:#24445c}
+.lesson-guide{background:#203b52;border:1px solid #456681;border-radius:12px;padding:15px;margin-bottom:17px}
+.lesson-guide h3{margin:0 0 6px;color:#dff7ef}
+.lesson-guide p{margin:5px 0 12px}
+.lesson-guide .predict{background:#11273c;border-radius:8px;padding:12px;margin:9px 0}
+.lesson-guide .answer{margin-top:10px;color:#d9e9f3}
+.lesson-guide button{font-size:14px}
+.lesson-guide .scope{font-size:12px;color:#a8bed2;margin-top:10px}
+#studentMode{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#studentMode label{font-size:14px;color:#cbddeb}
+#studentMode input{width:auto;height:auto;min-height:18px;min-width:18px}
+.instructor-extra{border-left:3px solid #7adfbd;padding-left:12px;margin-top:10px;color:#d3e5f2}
+.footer-note{color:#9eb4c7;font-size:12px;margin:25px 0}
+@media(max-width:600px){main{padding:12px}.lesson-cards{grid-template-columns:1fr}nav button{font-size:13px;padding:9px}}
+</style>
+<style>
+.shared-controller{margin:12px 0 18px;background:#152e44;border:1px solid #53738a;border-radius:14px;padding:14px;color:#e9f5ff}
+.shared-controller h3{margin:0 0 4px;font-size:18px;color:#f2f9ff}
+.shared-controller .ctrl-help{color:#b4cadd;font-size:12px;margin:0 0 8px}
+.shared-controller .ctrl-row{display:grid;grid-template-columns:minmax(200px,340px) minmax(180px,1fr);gap:16px;align-items:center}
+.shared-controller svg{width:100%;max-width:340px;touch-action:none;user-select:none}
+.shared-controller .ctrl-readout{font-size:13px;color:#d3e4f0;line-height:1.8}
+.shared-controller .ctrl-readout strong{color:#7be6c6}
+.shared-controller .ctrl-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.shared-controller button{font-size:12px}
+.shared-controller .ctrl-status{font-size:12px;color:#a8c6da;margin-top:7px}
+@media(max-width:620px){.shared-controller .ctrl-row{grid-template-columns:1fr}.shared-controller svg{max-width:310px}}
+</style><main><h1>Quadcopter Flight Dynamics Lab</h1><small>PHYSICAL SCIENCE 123 · AGUIRRETECH · OFFLINE TEACHING TOOL</small><nav aria-label="Lab navigation"><button class="active" id="tabHome">Home</button><button id="tab1">Motor mixer</button><button id="tab2">Tilt / thrust</button><button id="tab3">Stabilization lab</button><button id="tab4">Sensor feedback</button><button id="tab5">Motor failure</button><button id="tab6">Pilot sticks &amp; PID</button><button id="tabSim">Basic Flight Simulator</button></nav><section id="home">
+<div class="hero-eyebrow">AGUIRRETECH · INTERACTIVE STEM LEARNING</div>
+<h2 class="hero-title">Explore the physics behind quadcopter flight.</h2>
+<p class="hero-copy">Discover how four motors coordinate movement, how stabilization works, and what happens when control authority runs out. Choose a lesson, predict the result, then test it using the interactive model.</p>
+<div id="studentMode"><label><input id="showEngineering" type="checkbox"/> Show additional engineering notes</label><span style="font-size:12px;color:#9bb5cb">Optional deeper explanations for aerospace science students</span></div>
+<div class="lesson-cards">
+<article class="lesson-card"><span class="lesson-number">LESSON 01</span><h3>Motor Mixer</h3><p>Explore how differential thrust produces pitch, roll, yaw, and vertical motion.</p><button data-open-lesson="1" type="button">Open lesson →</button></article><article class="lesson-card"><span class="lesson-number">LESSON 02</span><h3>Tilt &amp; Thrust</h3><p>Investigate how tilting redirects total thrust into vertical and horizontal components.</p><button data-open-lesson="2" type="button">Open lesson →</button></article><article class="lesson-card"><span class="lesson-number">LESSON 03</span><h3>Stabilization Modes</h3><p>Compare how Angle and Acro/Rate modes respond to stick release.</p><button data-open-lesson="3" type="button">Open lesson →</button></article><article class="lesson-card"><span class="lesson-number">LESSON 04</span><h3>Sensor Feedback</h3><p>Follow the control loop from pilot input through sensing, correction, and motor commands.</p><button data-open-lesson="4" type="button">Open lesson →</button></article><article class="lesson-card"><span class="lesson-number">LESSON 05</span><h3>Motor Failure</h3><p>Explore motor effectiveness, command limits, and the limits of control authority.</p><button data-open-lesson="5" type="button">Open lesson →</button></article><article class="lesson-card"><span class="lesson-number">LESSON 06</span><h3>Pilot Sticks &amp; PID</h3><p>Connect Mode 2 stick movements with roll stabilization, PID terms, motor commands, and aircraft response.</p><button data-open-lesson="6" type="button">Open lesson →</button></article><article class="lesson-card" aria-label="Basic Flight Simulator"><span class="lesson-number">FLIGHT SIMULATOR</span><h3>Basic Flight Simulator</h3><p>Practice Mode 2 stick inputs, explore DJI-style and FPV controls, and observe aircraft movement.</p><button id="openSimHome" type="button">Open simulator →</button></article></div>
+<p class="hero-copy"
+
+<p class="hero-copy" style="font-size:13px">Suggested learning sequence: predict → experiment → explain. This is an educational model, not a DJI Flip or Betaflight flight simulator. No login or internet connection is required to use the downloaded HTML file.</p>
+</section><section hidden="" id="mix"><div class="lesson-guide">
+<span class="lesson-number">LESSON 01 · LEARNING GUIDE</span>
+<h3>Motor Mixer</h3><p><strong>Learning objective:</strong> Explore how differential thrust produces pitch, roll, yaw, and vertical motion.</p>
+<div class="predict"><strong>Predict before experimenting:</strong> Which motors should increase thrust to initiate forward pitch?<div><button aria-expanded="false" data-reveal="1" type="button">Reveal explanation</button></div><div class="answer" hidden="" id="guideAnswer1">The rear motors increase thrust relative to the front, creating a nose-down pitching moment. Once the target attitude is reached, the controller changes the motor balance again.</div></div>
+<div class="instructor-extra" hidden=""><strong>Instructor discussion:</strong> Ask students to identify which variables are commanded, which are measured, and what assumptions the model makes. Compare the visual result with a real aircraft demonstration.</div>
+<div class="scope"><strong>Model boundary:</strong> The displayed motor outputs are illustrative, not measured RPM or manufacturer telemetry.</div>
+<button data-home="true" type="button">← All lessons</button>
+</div><div class="shared-controller" data-lesson="1"></div><div id="moves"></div><div id="phases"></div><div class="views"><div><h2>Motor mixer · top view</h2><canvas height="390" id="top" width="440"></canvas></div><div><h2>Aircraft response · perspective</h2><canvas height="390" id="side" width="440"></canvas></div></div><p>🟢 Above hover thrust   🟠 Below hover thrust   ⚪ Hover baseline</p><div class="meters" id="meters"></div><p id="total"></p><button id="pause">Pause animation</button><button id="reset">Reset</button><p aria-live="polite" id="explain"></p><small>Illustrative normalized thrust, not RPM or DJI telemetry. Motion is schematic, not a numerical flight simulation. Animation resets travel periodically. Rotation directions viewed from above.</small></section><section hidden="" id="tilt"><div class="lesson-guide">
+<span class="lesson-number">LESSON 02 · LEARNING GUIDE</span>
+<h3>Tilt &amp; Thrust</h3><p><strong>Learning objective:</strong> Investigate how tilting redirects total thrust into vertical and horizontal components.</p>
+<div class="predict"><strong>Predict before experimenting:</strong> At 30° tilt, will the aircraft need more or less total thrust to maintain altitude?<div><button aria-expanded="false" data-reveal="2" type="button">Reveal explanation</button></div><div class="answer" hidden="" id="guideAnswer2">More. In the ideal model, T = mg / cos(30°), approximately 1.155 times hover thrust. The vertical component still balances weight.</div></div>
+<div class="instructor-extra" hidden=""><strong>Instructor discussion:</strong> Ask students to identify which variables are commanded, which are measured, and what assumptions the model makes. Compare the visual result with a real aircraft demonstration.</div>
+<div class="scope"><strong>Model boundary:</strong> The force model neglects aerodynamic lift and other vertical forces.</div>
+<button data-home="true" type="button">← All lessons</button>
+</div><h2>Why does a tilted drone need more thrust?</h2>
+<p>Think of the <strong>blue arrow as the total push from the propellers</strong>. When the drone tilts, some of that push goes sideways instead of holding it up. Use <strong>right stick up for forward tilt</strong>, <strong>right stick down for backward tilt</strong>, and <strong>left stick up/down to change the strength of the push</strong>.</p>
+<div class="ctrl-btns" style="margin:10px 0"><button id="tiltHover" type="button">Level hover</button><button id="tiltForward" type="button">Forward tilt</button><button id="tiltBackward" type="button">Backward tilt</button><button id="tiltHold" type="button">Balance altitude at current tilt</button></div><div class="tilt-learning-grid"><div class="tilt-controls-panel"><label for="angle">Pitch / tilt angle: <b id="deg">20°</b> <span style="font-size:12px;color:#aac3d4">(negative = backward, positive = forward)</span></label><input id="angle" max="45" min="-45" step="1" type="range" value="20"/><label for="thrust">Collective thrust command: <b id="thrustVal">100%</b> of level-hover thrust</label><input id="thrust" max="200" min="0" step="1" type="range" value="100"/><div class="meters" id="forces"></div><p aria-live="polite" id="forceStatus"></p></div><div class="tilt-diagram-panel"><canvas height="360" id="force" style="width:100%;max-width:680px;display:block;margin:auto" width="680"></canvas></div></div><p>Required for level altitude: T = mg / cos θ. Actual vertical component: T cos θ. Signed horizontal component: T sin θ (forward positive, backward negative).</p><small>Idealized direct-thrust model: the throttle stick is mapped to 0–200% of level-hover thrust, with midpoint representing 100%. Real altitude-hold flight controllers interpret throttle differently. Pitch stick is mapped to the displayed tilt for teaching purposes, not as a physical instantaneous response.</small></section><section hidden="" id="pidlab">
+<div class="lesson-guide"><span class="lesson-number">LESSON 06 · PILOT INPUT → CONTROL → MOTOR OUTPUT</span><h2>Mode 2 Controller &amp; PID Laboratory</h2><p><strong>Predict:</strong> If the roll stick returns to center while the aircraft is banked, what happens in Angle mode compared with Acro/Rate mode?</p><button id="pidReveal">Reveal explanation</button><p hidden="" id="pidAnswer">Angle mode targets level attitude when roll input is zero. Acro/Rate mode targets zero roll rate, so it can remain banked. The rate controller is active in both modes.</p><button data-home="true">← All lessons</button></div>
+<div class="pid-section-heading"><h3>1 · Pilot input and aircraft response</h3><p>Move the right stick and watch the adjacent roll and pitch responses. Change flight mode before releasing the stick.</p></div><div class="pid-pilot-grid"><div class="pid-panel"><h3>Mode 2 transmitter · move the stick dots</h3><div class="pid-mode-strip"><strong>Flight mode · affects roll and pitch</strong><div class="pid-actions"><button class="active" id="pidAngle">Angle mode</button><button id="pidAcro">Acro / Rate mode</button></div></div><p class="labnote">Drag the stick dots. Left: throttle / yaw. Right: pitch / roll. Double-click a stick to center it.</p>
+<svg aria-label="Interactive Mode 2 transmitter with two virtual joysticks" id="pidRadio" role="img" style="width:100%;max-width:500px;touch-action:none;user-select:none" viewbox="0 0 440 245">
+<path d="M64 44 Q64 24 91 24 H349 Q376 24 376 44 L418 205 Q421 227 396 229 H44 Q19 227 22 205 Z" fill="#34465b" stroke="#849cb4" stroke-width="4"></path>
+<path d="M102 24 V5 H124 V24 M316 24 V5 H338 V24" stroke="#839bb5" stroke-width="9"></path>
+<circle cx="137" cy="123" fill="#102337" r="69" stroke="#7c9bb5" stroke-width="3"></circle><circle cx="303" cy="123" fill="#102337" r="69" stroke="#7c9bb5" stroke-width="3"></circle>
+<path d="M80 123 H194 M137 66 V180 M246 123 H360 M303 66 V180" stroke="#6b879f" stroke-dasharray="4 5" stroke-width="2"></path>
+<circle cx="137" cy="123" fill="transparent" id="pidLeftHit" r="67"></circle><circle cx="303" cy="123" fill="transparent" id="pidRightHit" r="67"></circle><circle cx="137" cy="123" fill="#7be0be" id="pidLeft" r="18" stroke="#e4fff5" stroke-width="3"></circle><circle cx="303" cy="123" fill="#7be0be" id="pidRight" r="18" stroke="#e4fff5" stroke-width="3"></circle>
+<text fill="#f3f8ff" font-size="13" text-anchor="middle" x="137" y="217">THROTTLE / YAW</text><text fill="#f3f8ff" font-size="13" text-anchor="middle" x="303" y="217">PITCH / ROLL</text><text fill="#8de5c8" font-size="12" text-anchor="middle" x="220" y="48">MODE 2</text>
+</svg>
+<div class="pid-axes" id="pidAxes"></div>
+<div class="pid-actions"><button id="pidResetSticks">Center sticks</button><button id="pidRightPreset">Roll right</button><button id="pidLeftPreset">Roll left</button><button id="pidRelease">Release right stick</button></div>
+<p class="labnote">Drag the stick dots. Left: throttle / yaw. Right: pitch / roll. Double-click a stick to center it.</p></div><div class="pid-panel"><h3>Aircraft roll response</h3><canvas aria-label="Animated roll attitude and desired attitude" height="360" id="pidCanvas" width="640"></canvas><p class="pid-compact-note">Watch target and actual roll values below the aircraft. The difference is the error that drives correction.</p>
+<div class="pid-axes" id="pidReadouts"></div><div class="pid-actions"><button id="pidDisturb">Apply roll disturbance</button><button id="pidReset">Reset simulation</button><button id="pidPause">Pause</button></div></div><div class="pid-panel" style="margin:12px 0"><h3>Aircraft pitch response · nose up / nose down</h3>
+<p class="labnote">Move the <strong>right stick vertically</strong> in the transmitter above. Up commands nose-down (forward pitch); down commands nose-up (backward pitch). The side-view aircraft responds below. The roll PID gains above do <strong>not</strong> tune this separate illustrative pitch response.</p>
+<canvas aria-label="Side-view animated aircraft pitch response" height="270" id="pidPitchCanvas" style="width:100%;max-width:640px;display:block;margin:auto" width="640"></canvas>
+<div class="pid-axes" id="pidPitchReadout"></div>
+<p class="labnote">Angle mode: releasing pitch commands a return toward level. Acro/Rate mode: releasing pitch commands zero pitch rate, not necessarily level attitude. This is a simplified pitch response model, not an additional PID simulation.</p></div></div><div class="pid-section-heading"><h3>2 · Tune the roll controller</h3><p>Change P, I, or D, then observe the live correction and motor outputs immediately beside the sliders. Pitch is a separate illustrative response and is not tuned here.</p></div><div class="pid-tune-grid"><div class="pid-panel"><h3>PID gains · adjust and compare</h3>
+<label for="pidP">P gain <output id="pidPVal"></output></label><input id="pidP" max="8" min="0" step="0.1" type="range" value="3.4"/>
+<label for="pidI">I gain <output id="pidIVal"></output></label><input id="pidI" max="4" min="0" step="0.1" type="range" value="0.6"/>
+<label for="pidD">D gain <output id="pidDVal"></output></label><input id="pidD" max="3" min="0" step="0.1" type="range" value="0.9"/>
+<div class="pid-actions"><button id="pidGainsDefault">Restore default gains</button><button id="pidGainsNoD">Compare: D = 0</button></div>
+<p class="labnote"><strong>Engineering model:</strong> In Angle mode an outer attitude loop sets a target roll rate. In both modes an inner PID rate loop controls roll angular velocity. Derivative is applied to measured rate (with a simple filter), rather than taking a raw derivative of stick commands.</p></div><div class="pid-panel"><h3>Live control-loop measurements</h3><div class="pid-flow">Stick roll command → <strong id="pidTarget">Target</strong> → rate PID → <strong>motor mixer</strong> → roll acceleration → gyro feedback</div>
+<div class="pid-axes" id="pidTerms"></div><h3>Illustrative motor commands</h3><div class="pid-motors" id="pidMotors"></div>
+<p class="labnote">For the X-frame shown in the other modules, left-side motors M1 and M3 and right-side motors M2 and M4 receive opposing roll corrections. Outputs are constrained to the range 0–100% in this teaching display. Pitch and yaw stick positions are shown on the transmitter but are not part of this roll-only dynamics model.</p></div></div><div class="pid-section-heading"><h3>3 · Predict, test, and explain</h3></div><div class="pid-panel"><h3>Try these experiments</h3><p>1. In Angle mode, move the right stick to the right, then release it. Does the aircraft return to level?</p><p>2. Repeat in Acro mode. Does the aircraft stop rotating without automatically leveling?</p><p>3. Apply a disturbance with the stick centered. Reduce P, then restore it. Compare the correction.</p><p>4. Set D to zero and repeat the disturbance. Look for changes in damping and overshoot. Try increasing I to investigate steady-state error.</p><p class="labnote">Educational, single-axis, dimensionless controller model. Gain values are not Betaflight PID settings or DJI tuning values. Numerical responses depend on the model parameters and do not predict a real aircraft's behavior. Never test motor failure or aggressive tuning on an aircraft during a classroom demonstration.</p></div></section>
+<style>
+.pid-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.pid-panel{background:#20364d;border:1px solid #405b74;border-radius:12px;padding:16px;min-width:0}.pid-panel h3{margin:0 0 12px;font-size:17px}.pid-panel label{display:block;margin-top:10px}.pid-panel input[type=range]{width:100%}.pid-panel canvas{width:100%;height:auto}.pid-axes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.pid-axes div{background:#12283d;border-radius:8px;padding:9px;font-size:12px;color:#bcd0e1}.pid-axes strong{display:block;font-size:18px;color:#8ce4c7}.pid-actions{display:flex;flex-wrap:wrap;gap:5px}.pid-actions button{font-size:13px}.pid-flow{background:#11283e;padding:12px;border-radius:9px;line-height:1.8}.pid-motors{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.pid-motors>div{background:#11283e;border-radius:8px;padding:9px}.pid-motors .track{height:8px;border-radius:8px;background:#3e556c;margin-top:6px;overflow:hidden}.pid-motors .fill{height:100%;background:#80dfbf}.pid-panel p{line-height:1.55}@media(max-width:720px){.pid-layout{grid-template-columns:1fr}}
+</style>
+</main><section hidden="" id="stabilization"><div class="lesson-guide">
+<span class="lesson-number">LESSON 03 · LEARNING GUIDE</span>
+<h3>Stabilization Modes</h3><p><strong>Learning objective:</strong> Compare how Angle and Acro/Rate modes respond to stick release.</p>
+<div class="predict"><strong>Predict before experimenting:</strong> If you release the roll stick while the drone is tilted, will it return to level in both modes?<div><button aria-expanded="false" data-reveal="3" type="button">Reveal explanation</button></div><div class="answer" hidden="" id="guideAnswer3">No. Angle mode commands a return toward level. Acro/Rate mode commands zero angular rate, not zero attitude.</div></div>
+<div class="instructor-extra" hidden=""><strong>Instructor discussion:</strong> Ask students to identify which variables are commanded, which are measured, and what assumptions the model makes. Compare the visual result with a real aircraft demonstration.</div>
+<div class="scope"><strong>Model boundary:</strong> This is a simplified single-axis roll control model.</div>
+<button data-home="true" type="button">← All lessons</button>
+</div>
+<h2>Stabilization lab <small>· Version 1.1</small></h2>
+<p>Give the same stick command in two flight modes. Then release the stick and observe what the controller tries to hold.</p>
+<div class="modebar"><button class="active" id="angleMode">Angle · self-leveling</button><button id="rateMode">Acro / Rate</button><button id="stabReset">Reset aircraft</button></div>
+<div class="stabgrid">
+<div><h2>Virtual aircraft · roll axis</h2><canvas aria-label="Animated quadcopter roll attitude" height="360" id="stabCanvas" width="600"></canvas><p class="labnote">Front-facing schematic. Only one rotational axis is modeled. Green line marks level; cyan arrow shows commanded rotation direction.</p></div>
+<div><h2>Virtual roll stick</h2><div class="stickbox"><label for="rollStick">Stick command: <strong id="stickRead">Centered (0%)</strong></label><input id="rollStick" max="100" min="-100" step="5" type="range" value="0"/><div class="sticklabels"><span>◀ Left</span><span>Center</span><span>Right ▶</span></div><button id="releaseStick">Release / center stick</button><button id="gust">Apply brief disturbance</button></div><div class="readouts"><div>Roll attitude <strong id="attitudeVal">0.0°</strong></div><div>Roll rate <strong id="rateVal">0.0°/s</strong></div><div>Control effort <strong id="effortVal">0%</strong></div></div></div>
+</div>
+<div class="lesson" id="modeExplain"></div>
+<div class="lesson"><strong>Predict → Test → Explain</strong><p id="promptText">Move the stick to the right. Before releasing it, predict what the aircraft will do in this mode.</p><button id="reveal">Reveal instructor explanation</button><p hidden="" id="answerText"></p></div>
+<details><summary>Engineering detail · simplified feedback model</summary><p>Angle mode: stick position requests a roll angle; a proportional outer loop generates a target roll rate. Acro/Rate mode: stick position directly requests a roll rate. In both modes, a damped inner rate loop drives roll acceleration. The simulated gyroscope reports roll rate, not roll angle or position. The model uses ideal measurements, an illustrative disturbance and artificial damping. It is not DJI, Betaflight, or a certified flight simulator.</p><div class="equation">Angle: ω<sub>target</sub> = K<sub>angle</sub>(φ<sub>target</sub> − φ)<br/>Rate: ω<sub>target</sub> = stick × ω<sub>max</sub><br/>Motor moment: τ ≈ K<sub>rate</sub>(ω<sub>target</sub> − ω)<br/>Rotation: I φ̈ = τ</div></details>
+<p class="labnote">Instructor note: Angle mode self-levels attitude, not position. Acro/Rate mode stabilizes angular rate, but does not automatically level. Neither mode guarantees altitude or position hold. This visualization is intentionally limited to roll dynamics.</p>
+</section><section hidden="" id="feedback"><div class="lesson-guide">
+<span class="lesson-number">LESSON 04 · LEARNING GUIDE</span>
+<h3>Sensor Feedback</h3><p><strong>Learning objective:</strong> Follow the control loop from pilot input through sensing, correction, and motor commands.</p>
+<div class="predict"><strong>Predict before experimenting:</strong> If an external disturbance creates an unwanted roll rate, what should the gyro report?<div><button aria-expanded="false" data-reveal="4" type="button">Reveal explanation</button></div><div class="answer" hidden="" id="guideAnswer4">The gyro measures angular rate. The controller compares measured motion with the target and commands corrective motor differences. The gyro alone does not directly measure position.</div></div>
+<div class="instructor-extra" hidden=""><strong>Instructor discussion:</strong> Ask students to identify which variables are commanded, which are measured, and what assumptions the model makes. Compare the visual result with a real aircraft demonstration.</div>
+<div class="scope"><strong>Model boundary:</strong> Displayed sensor readings and motor outputs are model-generated.</div>
+<button data-home="true" type="button">← All lessons</button>
+</div>
+<h2>Sensor feedback &amp; four-motor coordination <small>· Version 1.2</small></h2>
+<p>Follow one roll-axis command from the pilot's stick, through the attitude/rate controller, to the four motors. Apply a disturbance to see the closed-loop correction.</p>
+<div class="fbrow"><button class="active" id="fbAngle">Angle mode</button><button id="fbRate">Acro / Rate mode</button><button id="fbGust">Apply roll disturbance</button><button id="fbReset">Reset</button></div>
+<div class="feedback-grid"><div class="fbpanel">
+<h3>Aircraft response and sensed rotation</h3><canvas height="320" id="fbCanvas" width="600"></canvas>
+<label for="fbStick">Roll stick: <strong id="fbStickVal">Centered</strong></label><input id="fbStick" max="100" min="-100" step="5" type="range" value="0"/>
+<div class="fbrow"><button id="fbCenter">Release / center stick</button><button class="active" id="fbSensor">Feedback: ON</button></div>
+<div class="fbstat"><div>Estimated bank<strong id="fbAngleVal">0.0°</strong></div><div>Gyro rate<strong id="fbGyroVal">0.0°/s</strong></div><div>Target rate<strong id="fbTargetVal">0.0°/s</strong></div></div>
+</div><div class="fbpanel"><h3>Control loop · live values</h3>
+<div class="fbflow"><div class="fbnode"><b>1. Pilot</b><span id="fbCmd">0%</span><br/>stick input</div><div class="fbnode"><b>2. Controller</b><span id="fbError">0°/s</span><br/>rate error</div><div class="fbnode"><b>3. Mixer</b><span id="fbMix">0%</span><br/>roll correction</div><div class="fbnode"><b>4. Sensors</b><span id="fbSense">0°/s</span><br/>gyro feedback</div></div>
+<p class="fbnote">The gyro measures <b>angular velocity</b>, not absolute roll angle. In Angle mode, a separate attitude estimate is needed for self-leveling. This simplified model uses idealized attitude and gyro measurements.</p>
+<h3>Individual motor outputs · X-frame</h3><div class="fbmotor" id="fbMotors"></div>
+<p class="fbnote">Motor order: M1 front-left (CW), M2 front-right (CCW), M3 rear-left (CCW), M4 rear-right (CW). Roll correction raises output on one side and lowers it on the other. Values are normalized illustrative thrust, not actual motor telemetry.</p></div></div>
+<div class="fbquiz"><strong>Predict → Test → Discuss</strong><p id="fbQuestion">In Angle mode, apply a disturbance with the stick centered. Which motors must increase thrust to return the aircraft toward level?</p><button id="fbReveal">Reveal engineering explanation</button><p hidden="" id="fbAnswer"></p></div>
+<details><summary>Engineering detail: the simplified feedback model</summary><div class="equation">Angle mode: desired rate = clamp(K<sub>angle</sub> × (desired roll angle − estimated roll angle))<br/>Acro mode: desired rate = stick × maximum roll rate<br/>Rate error = desired rate − gyro rate<br/>Roll control = clamp(K<sub>rate</sub> × rate error)<br/>Motor commands = collective thrust ± roll control<br/>Angular acceleration ∝ motor-generated roll moment + disturbance torque</div><p class="fbnote">For teaching clarity, this model uses a single roll axis, ideal sensors, proportional control, and simplified rigid-body response. It does not model full PID, sensor fusion, motor lag, rotor drag, or a manufacturer's actual control law. Turning feedback OFF is a hypothetical open-loop comparison, not a recommended flight mode.</p></details>
+</section>
+<section hidden="" id="failure"><div class="lesson-guide">
+<span class="lesson-number">LESSON 05 · LEARNING GUIDE</span>
+<h3>Motor Failure</h3><p><strong>Learning objective:</strong> Explore motor effectiveness, command limits, and the limits of control authority.</p>
+<div class="predict"><strong>Predict before experimenting:</strong> If one motor loses 25% effectiveness, can the quadcopter always maintain balanced hover?<div><button aria-expanded="false" data-reveal="5" type="button">Reveal explanation</button></div><div class="answer" hidden="" id="guideAnswer5">Not always. Compensation depends on remaining thrust headroom and whether all required moments can be balanced simultaneously. A complete failure generally prevents conventional fully controlled hover.</div></div>
+<div class="instructor-extra" hidden=""><strong>Instructor discussion:</strong> Ask students to identify which variables are commanded, which are measured, and what assumptions the model makes. Compare the visual result with a real aircraft demonstration.</div>
+<div class="scope"><strong>Model boundary:</strong> Static control allocation is not a prediction of a real aircraft's recovery trajectory.</div>
+<button data-home="true" type="button">← All lessons</button>
+</div>
+<h2>Motor failure &amp; control authority lab <small>v1.3</small></h2>
+<p>Explore whether a conventional X-frame quadcopter can maintain a balanced hover when one motor loses effectiveness. This is a <strong>quasi-static allocation model</strong>, not a crash predictor or full six-degree-of-freedom simulation.</p>
+<div class="failgrid">
+<div class="failpanel">
+<h3>1 · Configure the aircraft</h3>
+<label for="failedMotor">Motor to degrade</label><select id="failedMotor"><option value="0">M1 · front left · CW</option><option value="1">M2 · front right · CCW</option><option value="2">M3 · rear left · CCW</option><option value="3">M4 · rear right · CW</option></select>
+<label for="health">Motor effectiveness: <strong id="healthVal">75%</strong></label><input id="health" max="100" min="0" step="5" type="range" value="75"/>
+<div class="failbuttons"><button id="healthy">All healthy</button><button id="weak">25% loss</button><button id="dead">Motor stopped</button></div>
+<label for="headroom">Maximum motor output: <strong id="headroomVal">160%</strong> of nominal hover</label><input id="headroom" max="200" min="105" step="5" type="range" value="160"/>
+<label for="yawPriority">Yaw control priority: <strong id="yawPriorityVal">Low</strong></label><select id="yawPriority"><option value="0.25">Low (favor roll, pitch, lift)</option><option value="1">Equalized</option><option value="4">High (favor yaw)</option></select>
+<p class="failnote">Effectiveness multiplies commanded thrust. 75% health means 75% of the thrust expected from a given motor command. Output limit is an illustrative headroom setting, not a DJI or Hummingbird specification.</p>
+</div>
+<div class="failpanel"><h3>2 · Inspect motor outputs</h3><canvas aria-label="Four-motor diagram with individual commanded and actual thrust" height="430" id="failCanvas" width="560"></canvas><div class="failmotors" id="failMotors"></div></div>
+</div>
+<div class="failpanel"><h3>3 · Compare requested and achieved control</h3><div class="failmetrics" id="failMetrics"></div><div aria-live="polite" class="failstatus" id="failStatus"></div><p class="failnote">The solver minimizes weighted errors in collective lift, roll moment, pitch moment, and yaw reaction torque subject to each motor's command limit. It can sacrifice yaw authority to preserve other objectives. No stable-flight guarantee follows from this snapshot.</p></div>
+<div class="failpanel"><h3>4 · Predict → Test → Explain</h3><p><strong>Challenge:</strong> With 160% motor command available, can a motor operating at 75% effectiveness still produce its original hover thrust? What changes at 0% effectiveness? Does prioritizing yaw alter the trade-off?</p><button id="failReveal">Reveal instructor discussion</button><div hidden="" id="failAnswer"><p>A 75%-effective motor requires 100/0.75 = <strong>133.3%</strong> of its original hover command to generate the same thrust. If that command is within the available range, the ideal four-motor hover balance can still be achieved.</p><p>When one rotor produces no thrust, four independent hover objectives (lift, roll, pitch, yaw) generally cannot all be satisfied with the three remaining rotors. Depending on priorities, a controller may trade yaw control against other objectives. A complete failure does <strong>not</strong> imply a specific trajectory in this static model. Specialized fault-tolerant controllers may maintain limited flight while sacrificing yaw, but that is not normal consumer quadcopter behavior.</p></div></div>
+<details><summary>Engineering details · control allocation</summary><div class="equation">Actual normalized thrust: fᵢ = ηᵢ uᵢ, with 0 ≤ uᵢ ≤ uₘₐₓ.<br/>Target: Σ fᵢ = 4 hover units; roll = 0; pitch = 0; yaw reaction torque = 0.<br/>Roll moment ∝ (f₁ + f₃) − (f₂ + f₄).<br/>Pitch moment ∝ (f₃ + f₄) − (f₁ + f₂).<br/>Yaw reaction torque ∝ −f₁ + f₂ + f₃ − f₄, under the assumed rotor directions.<br/>Bounded weighted least squares minimizes the control residual. Normalized torque coefficients and motor-to-thrust mapping are simplified.</div></details>
+</section>
+<style>
+.failgrid{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(300px,1.15fr);gap:12px}.failpanel{background:#20364d;padding:15px;border-radius:12px;margin:12px 0}.failpanel h3{margin-top:0}.failpanel label{display:block;margin:13px 0 4px}.failpanel select{width:100%;min-height:44px;padding:9px;border-radius:8px;background:#102237;color:#eef5ff;border:1px solid #526d88;font:inherit}.failbuttons{display:flex;flex-wrap:wrap;gap:4px}.failnote{font-size:12px;line-height:1.55}.failmotors{display:grid;grid-template-columns:1fr 1fr;gap:9px}.failmotor{background:#122237;border-radius:8px;padding:9px;font-size:12px}.failmotor strong{display:block;font-size:18px;color:#eef5ff;margin:3px 0}.failbar{height:8px;background:#40566c;border-radius:6px;overflow:hidden;margin:5px 0}.failbar>div{height:100%;background:#75dfbe}.failmetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.failmetrics>div{background:#122237;border-radius:8px;padding:12px;font-size:12px}.failmetrics strong{display:block;font-size:19px;margin-top:5px}.failstatus{border-left:4px solid #75dfbe;padding:12px;background:#122237;margin-top:12px;line-height:1.5}#failCanvas{max-width:100%;display:block}#failure .equation{font-size:14px}@media(max-width:800px){.failgrid{grid-template-columns:1fr}.failmetrics{grid-template-columns:1fr 1fr}}@media(max-width:440px){.failmotors{grid-template-columns:1fr}}
+</style>
+<script>
+const $=x=>document.getElementById(x), names=['Hover','Climb','Descend','Forward','Backward','Roll right','Roll left','Yaw CW','Yaw CCW'], patterns=[[100,100,100,100],[125,125,125,125],[75,75,75,75],[80,80,120,120],[120,120,80,80],[120,80,120,80],[80,120,80,120],[80,120,120,80],[120,80,80,120]], pos=[[-1,1],[1,1],[-1,-1],[1,-1]], dir=[1,-1,-1,1], desc=['Thrust balances weight; reaction torques cancel.','All four increase thrust to initiate upward acceleration.','All four decrease thrust to initiate downward acceleration.','Rear thrust exceeds front thrust to initiate nose-down pitch.','Front thrust exceeds rear thrust to initiate nose-up pitch.','Left thrust exceeds right thrust to initiate right roll.','Right thrust exceeds left thrust to initiate left roll.','CCW rotors increase output relative to CW rotors; reaction torque turns body clockwise.','CW rotors increase output relative to CCW rotors; reaction torque turns body counterclockwise.'];let sel=0,phase=0,t=0,paused=false,spin=[0,0,0,0];const green='#75dfbe',orange='#ffae6c',gray='#9bacc0',cyan='#5edbfa';function col(v){return v>101?green:v<99?orange:gray}function vals(){return phase&&sel>=3&&sel<=6?[106.4,106.4,106.4,106.4]:phase&&sel>=1&&sel<=2?[100,100,100,100]:patterns[sel]}function buttons(el,labels,active,fn){el.innerHTML='';labels.forEach((s,i)=>{let b=document.createElement('button');b.textContent=s;b.className=i===active?'active':'';b.onclick=()=>fn(i);el.append(b)})}function update(){buttons($('moves'),names,sel,i=>{sel=i;phase=0;t=0;update()});$('phases').innerHTML='';if(sel>=1&&sel<=6)buttons($('phases'),['Initiate','Maintain'],phase,i=>{phase=i;t=0;update()});let v=vals();$('meters').innerHTML=v.map((n,i)=>`<div class="meter">M${i+1} · ${dir[i]>0?'CW':'CCW'}<b>${n.toFixed(1)}%</b><div class="bar" style="width:${n/1.5}%;background:${col(n)}"></div></div>`).join('');$('total').textContent='Total thrust: '+(v.reduce((a,b)=>a+b)/4).toFixed(1)+'% of hover';$('explain').textContent=phase?(sel>=3?'At steady 20° tilt, net rotational moment is approximately zero. Equal thrust at 106.4% balances weight vertically in this ideal model.':'At constant vertical speed, net vertical force is zero. In the drag-free model thrust returns to hover value.'):desc[sel]+' (Illustrative initial command.)'}function line(c,a,b,color,w=2){c.beginPath();c.moveTo(...a);c.lineTo(...b);c.strokeStyle=color;c.lineWidth=w;c.stroke()}function arrow(c,a,b,color,w=3){line(c,a,b,color,w);let q=Math.atan2(b[1]-a[1],b[0]-a[0]);for(let d of [-.45,.45])line(c,b,[b[0]-11*Math.cos(q+d),b[1]-11*Math.sin(q+d)],color,w)}function txt(c,s,x,y,color='#eaf4ff',size=14){c.fillStyle=color;c.font=`600 ${size}px system-ui`;c.textAlign='center';c.fillText(s,x,y)}function disk(c,x,y,r,color){c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.strokeStyle=color;c.lineWidth=2;c.stroke()}function drawTop(){let c=$('top').getContext('2d');c.clearRect(0,0,440,390);let v=vals();txt(c,'NOSE ↑',220,22,green);pos.forEach(([x,y],i)=>{let p=[220+x*105,190-y*105];line(c,[220,190],p,gray,13)});c.fillStyle='#dce7ef';c.fillRect(198,158,44,64);pos.forEach(([x,y],i)=>{let p=[220+x*105,190-y*105],co=col(v[i]);disk(c,...p,45,co);let a=spin[i];line(c,[p[0]-39*Math.cos(a),p[1]-39*Math.sin(a)],[p[0]+39*Math.cos(a),p[1]+39*Math.sin(a)],co,8);txt(c,dir[i]>0?'↻ CW':'↺ CCW',p[0],p[1]-52);txt(c,`M${i+1} · ${Math.round(v[i])}%`,p[0],p[1]+65,co)})}function side(){let c=$('side').getContext('2d');c.clearRect(0,0,440,390);let v=vals(),u=(t%3)/3,s=phase?1:Math.min(1,t),travel=phase?u:u*u,p=sel===3?-.349*s:sel===4?.349*s:0,r=sel===5?-.349*s:sel===6?.349*s:0,yaw=sel===7?-t*.7:sel===8?t*.7:0,x=0,y=0,h=1.45;if(sel===1)h+=travel;if(sel===2)h-=travel*.8;if(sel===3)y+=travel*1.5;if(sel===4)y-=travel*1.5;if(sel===5)x+=travel*1.5;if(sel===6)x-=travel*1.5;function proj(a,b,z){return [220+67*(.86*a+.5*b),245+67*(.38*a-.6*b-.86*z)]}function P(a,b,z){let B=b*Math.cos(p)-z*Math.sin(p),Z=b*Math.sin(p)+z*Math.cos(p),A=a*Math.cos(r)-Z*Math.sin(r);Z=a*Math.sin(r)+Z*Math.cos(r);return proj(A*Math.cos(yaw)-B*Math.sin(yaw)+x,A*Math.sin(yaw)+B*Math.cos(yaw)+y,Z+h)}for(let i=-4;i<=4;i++){line(c,proj(i,-4,0),proj(i,4,0),'#29445c',1);line(c,proj(-4,i,0),proj(4,i,0),'#29445c',1)}let center=P(0,0,0);pos.forEach(([a,b],i)=>{let q=P(a,b,0);line(c,center,q,gray,11);c.beginPath();for(let j=0;j<=48;j++){let k=j/48*2*Math.PI,l=P(a+.44*Math.cos(k),b+.44*Math.sin(k),0);j?c.lineTo(...l):c.moveTo(...l)}c.strokeStyle=col(v[i]);c.lineWidth=3;c.stroke();let k= -spin[i];line(c,P(a-.4*Math.cos(k),b-.4*Math.sin(k),0),P(a+.4*Math.cos(k),b+.4*Math.sin(k),0),col(v[i]),6);arrow(c,q,P(a,b,.55*v[i]/100),green,2)});line(c,P(0,-.35,0),P(0,.45,0),'#e6edf5',18);arrow(c,P(0,0,.1),P(0,.7,.1),green);let mag=v.reduce((a,b)=>a+b)/400;arrow(c,center,P(0,0,1.1*mag),cyan,4);arrow(c,center,proj(x,y,h-1.1),orange,3);txt(c,names[sel],220,24,green,18);txt(c,'Cyan: total thrust · Orange: weight',220,373,gray,13)}function forces(){
+ let a=Number($('angle').value),r=a*Math.PI/180,T=Number($('thrust').value)/100;
+ let required=1/Math.cos(r),vertical=T*Math.cos(r),horizontal=T*Math.sin(r);
+ let c=$('force').getContext('2d');c.clearRect(0,0,680,360);
+ let cx=340,cy=213,scale=105,cos=Math.cos(r),sin=Math.sin(r);
+ // faint grid and level reference
+ c.save();c.strokeStyle='#29445c';c.lineWidth=1;
+ for(let x=50;x<680;x+=50){c.beginPath();c.moveTo(x,28);c.lineTo(x,340);c.stroke()}
+ for(let y=40;y<360;y+=50){c.beginPath();c.moveTo(35,y);c.lineTo(650,y);c.stroke()}
+ c.restore();
+ line(c,[55,cy],[625,cy],'#627e96',1);
+ txt(c,'BACKWARD  ←',110,332,gray,13);txt(c,'→  FORWARD',566,332,gray,13);
+ // Quadcopter side silhouette. Right of the drawing is forward.
+ c.save();c.translate(cx,cy);c.rotate(r);
+ // arms and four rotors, two visible in side projection
+ line(c,[-107,0],[107,0],'#9db2c3',8);
+ line(c,[-94,-6],[-94,-22],'#9db2c3',5);
+ line(c,[94,-6],[94,-22],'#9db2c3',5);
+ for(const x of [-94,94]){
+   c.beginPath();c.ellipse(x,-23,34,6,0,0,2*Math.PI);c.strokeStyle='#7be6c6';c.lineWidth=4;c.stroke();
+   line(c,[x-25,-23],[x+25,-23],'#e5f3f9',3);
+ }
+ c.fillStyle='#d7e4ef';c.beginPath();c.roundRect(-35,-14,70,27,8);c.fill();
+ c.fillStyle='#7be6c6';c.beginPath();c.moveTo(36,-6);c.lineTo(48,0);c.lineTo(36,6);c.fill();
+ c.restore();
+ // actual force vectors. x+ forward; y- up
+ let tip=[cx+sin*T*scale,cy-cos*T*scale];
+ if(T>0.02)arrow(c,[cx,cy],tip,cyan,5);
+ let vertTip=[cx,cy-cos*T*scale];
+ if(Math.abs(vertical)>.03)arrow(c,[cx,cy],vertTip,green,3);
+ if(Math.abs(horizontal)>.03)arrow(c,vertTip,tip,'#f2e69a',3);
+ arrow(c,[cx,cy],[cx,cy+scale],orange,4);
+ txt(c,'TOTAL THRUST',Math.max(105,Math.min(570,tip[0]+(sin>=0?90:-90))),Math.max(35,tip[1]-13),cyan,13);
+ txt(c,'UPWARD',cx-55,Math.max(38,vertTip[1]+20),green,12);
+ if(Math.abs(horizontal)>.03)txt(c,horizontal>0?'FORWARD PUSH':'BACKWARD PUSH',(cx+tip[0])/2,Math.max(30,vertTip[1]-13),'#f2e69a',12);
+ txt(c,'WEIGHT (gravity)',cx+95,cy+scale-4,orange,13);
+ txt(c,'Nose →',cx+136,cy+15,gray,12);
+ $('deg').textContent=(a>0?'+':'')+a+'°';
+ $('thrustVal').textContent=(T*100).toFixed(0)+'%';
+ $('forces').innerHTML=[
+ ['Total propeller thrust',T*100],
+ ['Upward support against gravity',vertical*100],
+ [(horizontal>=0?'Forward':'Backward')+' push',Math.abs(horizontal)*100],
+ ['Thrust required to hold altitude',required*100]
+ ].map(([k,v])=>`<div class="meter">${k}<b>${v.toFixed(1)}%</b>of weight</div>`).join('');
+ let direction=Math.abs(a)<1?'level':a>0?'nose-down (forward)':'nose-up (backward)';
+ let movement=Math.abs(horizontal)<.005?'no horizontal acceleration':horizontal>0?'forward acceleration':'backward acceleration';
+ let height=Math.abs(vertical-1)<.005?'balanced vertical forces':vertical<1?'downward acceleration':'upward acceleration';
+ $('forceStatus').textContent=`${direction} pitch: ${movement}; ${height}. ${T===0?'With zero thrust, gravity acts alone.':''}`;
+}
+$('tiltHover').onclick=()=>{$('angle').value=0;$('thrust').value=100;forces();$('angle').dispatchEvent(new Event('input',{bubbles:true}));$('thrust').dispatchEvent(new Event('input',{bubbles:true}))};
+$('tiltForward').onclick=()=>{$('angle').value=25;$('angle').dispatchEvent(new Event('input',{bubbles:true}))};
+$('tiltBackward').onclick=()=>{$('angle').value=-25;$('angle').dispatchEvent(new Event('input',{bubbles:true}))};
+$('tiltHold').onclick=()=>{$('thrust').value=Math.round(100/Math.cos(Number($('angle').value)*Math.PI/180));$('thrust').dispatchEvent(new Event('input',{bubbles:true}))};
+let last=performance.now();function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){t+=dt;spin=spin.map((a,i)=>a+dir[i]*dt*12*Math.sqrt(vals()[i]/100))}if(!$('mix').hidden){drawTop();side()}requestAnimationFrame(frame)}$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume animation':'Pause animation'};$('reset').onclick=()=>{sel=phase=t=0;paused=false;$('pause').textContent='Pause animation';update()};$('angle').oninput=forces;$('thrust').oninput=forces;function tab(i){$('mix').hidden=i===2;$('tilt').hidden=i===1;$('tab1').className=i===1?'active':'';$('tab2').className=i===2?'active':'';if(i===2)forces()}$('tab1').onclick=()=>tab(1);$('tab2').onclick=()=>tab(2);update();forces();requestAnimationFrame(frame);
+</script>
+<script>
+(function(){
+const E=id=>document.getElementById(id);let mode='angle',phi=0,omega=0,effort=0,disturbance=0,last=performance.now();
+const rad=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function renderText(){E('angleMode').classList.toggle('active',mode==='angle');E('rateMode').classList.toggle('active',mode==='rate');E('modeExplain').innerHTML=mode==='angle'?'<strong>Angle mode</strong><p>Stick position commands a target bank angle. Centering the stick commands level flight, so the controller actively returns the aircraft toward 0° roll.</p>':'<strong>Acro / Rate mode</strong><p>Stick position commands a target roll rate. Centering the stick commands zero rotation. The aircraft can stop rotating while remaining banked.</p>';E('promptText').textContent=mode==='angle'?'Move the stick right, then center it. Will the aircraft return to level, or remain banked?':'Move the stick right, then center it. Will the aircraft return to level, or remain banked?';E('answerText').hidden=true;}
+function reset(){phi=omega=effort=disturbance=0;E('rollStick').value=0;renderReadout()}
+E('angleMode').onclick=()=>{mode='angle';reset();renderText()};E('rateMode').onclick=()=>{mode='rate';reset();renderText()};E('stabReset').onclick=reset;
+E('releaseStick').onclick=()=>{E('rollStick').value=0;renderReadout()};E('gust').onclick=()=>{omega+=mode==='angle'?45:45;disturbance=1};
+E('reveal').onclick=()=>{E('answerText').hidden=false;E('answerText').textContent=mode==='angle'?'Angle mode: the aircraft returns toward level because the stick requests a zero bank angle. The gyro measures rotation rate, while the controller also needs an attitude estimate to determine its bank angle.':'Acro/Rate mode: the aircraft stops its rotation but remains at the attained bank angle. The stick commands angular rate, not a level attitude.'};
+function renderReadout(){let stick=+E('rollStick').value;E('stickRead').textContent=stick===0?'Centered (0%)':`${Math.abs(stick)}% ${stick<0?'left':'right'}`;E('attitudeVal').textContent=phi.toFixed(1)+'°';E('rateVal').textContent=omega.toFixed(1)+'°/s';E('effortVal').textContent=Math.round(Math.abs(effort)*100)+'%';}
+function draw(){const c=E('stabCanvas').getContext('2d'),W=600,H=360;c.clearRect(0,0,W,H);c.fillStyle='#102237';c.fillRect(0,0,W,H);
+for(let x=30;x<W;x+=30){c.strokeStyle='#1d3a51';c.lineWidth=1;c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke()}
+for(let y=30;y<H;y+=30){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke()}
+c.setLineDash([7,6]);c.strokeStyle='#75dfbe';c.lineWidth=2;c.beginPath();c.moveTo(25,180);c.lineTo(575,180);c.stroke();c.setLineDash([]);c.fillStyle='#75dfbe';c.font='15px system-ui';c.fillText('LEVEL 0°',22,169);
+c.save();c.translate(300,185);c.rotate(phi*rad);c.strokeStyle='#c8d9e9';c.lineWidth=13;c.lineCap='round';c.beginPath();c.moveTo(-150,0);c.lineTo(150,0);c.stroke();c.fillStyle='#dae6ef';c.fillRect(-28,-19,56,38);
+for(const x of [-145,145]){c.strokeStyle='#75dfbe';c.lineWidth=3;c.beginPath();c.ellipse(x,-10,39,8,0,0,2*Math.PI);c.stroke();c.fillStyle='#a8c2d5';c.beginPath();c.arc(x,0,10,0,2*Math.PI);c.fill()}
+c.restore();c.fillStyle='#eef5ff';c.font='bold 19px system-ui';c.textAlign='center';c.fillText(mode==='angle'?'ANGLE · TARGET ATTITUDE':'ACRO · TARGET ROTATION RATE',300,38);c.font='15px system-ui';c.fillText('Current roll: '+phi.toFixed(1)+'°',300,331);
+let stick=+E('rollStick').value;if(stick!==0){c.fillStyle='#55c9e9';c.font='bold 17px system-ui';c.fillText(stick>0?'↻ RIGHT ROLL COMMAND':'↺ LEFT ROLL COMMAND',300,68)}c.textAlign='start';}
+function frame(now){let dt=Math.min(.04,(now-last)/1000);last=now;let stick=+E('rollStick').value/100;
+// Intentionally simplified, bounded 1-DOF roll dynamics, with damping and limited control authority.
+let targetRate=mode==='angle'?clamp(2.5*(stick*35-phi),-110,110):stick*110;
+let accel=clamp(5.5*(targetRate-omega),-380,380);
+effort=accel/380;omega+=accel*dt;omega*=Math.exp(-.12*dt);phi+=omega*dt;phi=clamp(phi,-170,170);
+if(E('stabilization').hidden===false){renderReadout();draw()}requestAnimationFrame(frame)}
+E('tab3').onclick=()=>{E('mix').hidden=true;E('tilt').hidden=true;E('stabilization').hidden=false;E('tab1').classList.remove('active');E('tab2').classList.remove('active');E('tab3').classList.add('active');draw()};
+for(let n of [1,2]){let b=E('tab'+n);let prior=b.onclick;b.onclick=()=>{prior();E('stabilization').hidden=true;E('tab3').classList.remove('active')}}
+renderText();renderReadout();requestAnimationFrame(frame);
+})();
+</script>
+<script>
+(function(){
+const ids=['mix','tilt','stabilization','feedback','failure'];
+const home=document.getElementById('home');
+function go(n){
+  home.hidden=n!==0;
+  ids.forEach((id,i)=>document.getElementById(id).hidden=n!==i+1);
+  for(let i=1;i<=5;i++)document.getElementById('tab'+i).classList.toggle('active',i===n);
+  document.getElementById('tabHome').classList.toggle('active',n===0);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+document.getElementById('tabHome').addEventListener('click',()=>go(0));
+for(let i=1;i<=5;i++)document.getElementById('tab'+i).addEventListener('click',()=>go(i));
+document.querySelectorAll('[data-open-lesson]').forEach(b=>b.addEventListener('click',()=>go(Number(b.dataset.openLesson))));
+document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>go(0)));
+document.querySelectorAll('[data-reveal]').forEach(b=>b.addEventListener('click',()=>{
+ const answer=document.getElementById('guideAnswer'+b.dataset.reveal);
+ answer.hidden=!answer.hidden;
+ b.setAttribute('aria-expanded',String(!answer.hidden));
+ b.textContent=answer.hidden?'Reveal explanation':'Hide explanation';
+}));
+document.getElementById('showEngineering').addEventListener('change',e=>{
+ document.querySelectorAll('.instructor-extra').forEach(x=>x.hidden=!e.target.checked);
+});
+go(0);
+})();
+</script>
+<script>
+(function(){'use strict';
+const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const tabs=['mix','tilt','stabilization','feedback','failure','pidlab'];
+function openLesson(n){$('home').hidden=n!==0;tabs.forEach((id,i)=>$(id).hidden=n!==i+1);$('tabHome').classList.toggle('active',n===0);for(let i=1;i<=6;i++)$('tab'+i).classList.toggle('active',i===n);window.scrollTo(0,0)}
+$('tab6').onclick=()=>openLesson(6);
+document.querySelectorAll('[data-open-lesson="6"]').forEach(b=>b.onclick=()=>openLesson(6));
+document.querySelectorAll('#pidlab [data-home]').forEach(b=>b.onclick=()=>openLesson(0));
+for(let i=1;i<=5;i++)$('tab'+i).addEventListener('click',()=>{$('pidlab').hidden=true;$('tab6').classList.remove('active')});
+$('tabHome').addEventListener('click',()=>{$('pidlab').hidden=true;$('tab6').classList.remove('active')});
+let axes={throttle:50,yaw:0,pitch:0,roll:0},mode='angle',theta=0,omega=0,integ=0,rateFiltered=0,last=performance.now(),paused=false,disturbance=0,pitchTheta=0,pitchRate=0;
+let terms={p:0,i:0,d:0,effort:0,targetRate:0};
+function refreshStick(){ $('pidLeft').setAttribute('cx',137+axes.yaw*.55);$('pidLeft').setAttribute('cy',123+(50-axes.throttle)*1.1);$('pidRight').setAttribute('cx',303+axes.roll*.55);$('pidRight').setAttribute('cy',123-axes.pitch*.55);
+$('pidAxes').innerHTML=Object.entries(axes).map(([k,v])=>`<div>${k.toUpperCase()}<strong>${Math.round(v)}${k==='throttle'?'%':'%'}</strong></div>`).join('')}
+function bindStick(circle,cx,cy,left){let el=$(circle),svg=$('pidRadio');function move(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const matrix=svg.getScreenCTM();if(!matrix)return;const q=p.matrixTransform(matrix.inverse());let x=clamp((q.x-cx)/55,-1,1),y=clamp((cy-q.y)/55,-1,1);if(left){axes.yaw=x*100;axes.throttle=(y+1)*50}else{axes.roll=x*100;axes.pitch=y*100}refreshStick()}
+el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);move(e)});el.addEventListener('pointermove',e=>{if(el.hasPointerCapture(e.pointerId))move(e)});el.addEventListener('dblclick',()=>{if(left){axes.yaw=0;axes.throttle=50}else{axes.roll=axes.pitch=0}refreshStick()})}
+bindStick('pidLeft',137,123,true);bindStick('pidRight',303,123,false);bindStick('pidLeftHit',137,123,true);bindStick('pidRightHit',303,123,false);
+$('pidResetSticks').onclick=()=>{axes={throttle:50,yaw:0,pitch:0,roll:0};refreshStick()};
+$('pidRightPreset').onclick=()=>{axes.roll=65;axes.pitch=0;refreshStick()};$('pidLeftPreset').onclick=()=>{axes.roll=-65;axes.pitch=0;refreshStick()};$('pidRelease').onclick=()=>{axes.roll=0;axes.pitch=0;refreshStick()};
+$('pidAngle').onclick=()=>{mode='angle';$('pidAngle').classList.add('active');$('pidAcro').classList.remove('active');integ=0};$('pidAcro').onclick=()=>{mode='acro';$('pidAcro').classList.add('active');$('pidAngle').classList.remove('active');integ=0};
+$('pidReveal').onclick=()=>{$('pidAnswer').hidden=!$('pidAnswer').hidden};
+function gains(){let p=+$('pidP').value,i=+$('pidI').value,d=+$('pidD').value;$('pidPVal').textContent=p.toFixed(1);$('pidIVal').textContent=i.toFixed(1);$('pidDVal').textContent=d.toFixed(1);return {p,i,d}}
+['pidP','pidI','pidD'].forEach(id=>$(id).addEventListener('input',gains));$('pidGainsDefault').onclick=()=>{ $('pidP').value=3.4;$('pidI').value=.6;$('pidD').value=.9;gains()};$('pidGainsNoD').onclick=()=>{$('pidD').value=0;gains()};
+$('pidDisturb').onclick=()=>{omega+=45};$('pidReset').onclick=()=>{theta=omega=integ=rateFiltered=disturbance=pitchTheta=pitchRate=0;axes.roll=axes.pitch=0;refreshStick()};$('pidPause').onclick=()=>{paused=!paused;$('pidPause').textContent=paused?'Resume':'Pause'};
+function step(dt){const {p,i,d}=gains();const targetAngle=axes.roll*.3;const targetRate=mode==='angle'?clamp((targetAngle-theta)*3,-130,130):axes.roll*1.3;
+const error=targetRate-omega;const filteredBefore=rateFiltered;rateFiltered+=(omega-rateFiltered)*Math.min(1,dt*16);const gyroDerivative=(rateFiltered-filteredBefore)/dt;
+const proportional=p*error/100,derivative=-d*gyroDerivative/100;
+const provisional=proportional+i*integ+derivative;const u=clamp(provisional,-.42,.42);
+// Conditional integration prevents runaway when actuator saturates in the same error direction.
+if(Math.abs(provisional)<.42 || (provisional>0&&error<0)||(provisional<0&&error>0))integ=clamp(integ+error*dt/100,-.5,.5);
+const integral=i*integ;
+const effort=clamp(proportional+integral+derivative,-.42,.42);
+const angularAcceleration=effort*280-omega*.7;
+omega=clamp(omega+angularAcceleration*dt,-250,250);theta=clamp(theta+omega*dt,-160,160);
+terms={p:proportional,i:integral,d:derivative,effort,targetRate};}
+function stepPitch(dt){
+ const desiredAngle=-axes.pitch*.3;
+ const targetRate=mode==='angle'?clamp((desiredAngle-pitchTheta)*3,-130,130):-axes.pitch*1.3;
+ const accel=clamp((targetRate-pitchRate)*4,-300,300);
+ pitchRate=clamp(pitchRate+accel*dt,-180,180);
+ pitchTheta=clamp(pitchTheta+pitchRate*dt,-85,85);
+}
+function drawPitch(){
+ const c=$('pidPitchCanvas').getContext('2d'),w=640,h=270,cx=320,cy=143;
+ c.fillStyle='#102338';c.fillRect(0,0,w,h);
+ c.strokeStyle='#54718a';c.setLineDash([5,5]);c.beginPath();c.moveTo(40,cy);c.lineTo(600,cy);c.stroke();c.setLineDash([]);
+ c.save();c.translate(cx,cy);c.rotate(pitchTheta*Math.PI/180);
+ c.lineCap='round';c.strokeStyle='#7ce4c0';c.lineWidth=8;c.beginPath();c.moveTo(-158,0);c.lineTo(158,0);c.stroke();
+ c.fillStyle='#cde9f2';c.fillRect(-32,-13,64,26);
+ for(const x of [-139,139]){c.strokeStyle='#9cd4e7';c.lineWidth=4;c.beginPath();c.ellipse(x,-9,28,5,0,0,Math.PI*2);c.stroke()}
+ c.fillStyle='#7ce4c0';c.beginPath();c.moveTo(158,0);c.lineTo(140,-12);c.lineTo(140,12);c.closePath();c.fill();c.restore();
+ c.font='14px system-ui';c.fillStyle='#dcecf7';c.fillText('REAR',45,247);c.fillText('FRONT / NOSE →',470,247);
+ c.fillStyle='#7ce4c0';c.fillText('Measured pitch: '+pitchTheta.toFixed(1)+'°',18,28);
+ c.fillStyle='#a9c8dc';c.fillText(axes.pitch>2?'Stick up: forward / nose down':axes.pitch< -2?'Stick down: backward / nose up':'Pitch stick centered',18,51);
+ $('pidPitchReadout').innerHTML='<div>Pitch attitude<strong>'+pitchTheta.toFixed(1)+'°</strong></div><div>Pitch rate<strong>'+pitchRate.toFixed(1)+'°/s</strong></div><div>Mode<strong>'+(mode==='angle'?'Angle':'Acro / Rate')+'</strong></div>';
+}
+function draw(){let c=$('pidCanvas').getContext('2d'),w=640,h=360;c.clearRect(0,0,w,h);c.fillStyle='#102338';c.fillRect(0,0,w,h);
+for(let y=50;y<h;y+=40){c.strokeStyle='#233b52';c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+const cx=320,cy=188;c.strokeStyle='#7a91a8';c.setLineDash([6,5]);c.beginPath();c.moveTo(60,cy);c.lineTo(580,cy);c.stroke();c.setLineDash([]);
+function craft(angle,col,thick){c.save();c.translate(cx,cy);c.rotate(-angle*Math.PI/180);c.strokeStyle=col;c.lineWidth=thick;c.lineCap='round';c.beginPath();c.moveTo(-165,0);c.lineTo(165,0);c.stroke();c.fillStyle=col;c.fillRect(-22,-11,44,22);c.beginPath();c.ellipse(-150,-6,26,5,0,0,Math.PI*2);c.ellipse(150,-6,26,5,0,0,Math.PI*2);c.fill();c.restore()}
+if(mode==='angle')craft(axes.roll*.3,'#567d9b',4);craft(theta,'#7ce4c0',9);
+c.fillStyle='#e7f4ff';c.font='17px system-ui';c.fillText('Measured roll: '+theta.toFixed(1)+'°',20,35);c.fillStyle='#a5c7dd';c.font='13px system-ui';c.fillText(mode==='angle'?'Blue: commanded roll angle':'Acro: stick commands roll rate',20,58);c.fillText('Green: modeled aircraft attitude',20,77);
+}
+function readout(){const target=mode==='angle'?`Angle ${(axes.roll*.3).toFixed(1)}°`:`Rate ${(axes.roll*1.3).toFixed(1)}°/s`;$('pidTarget').textContent=target;
+$('pidReadouts').innerHTML=`<div>Roll attitude<strong>${theta.toFixed(1)}°</strong></div><div>Gyro roll rate<strong>${omega.toFixed(1)}°/s</strong></div><div>Target rate<strong>${terms.targetRate.toFixed(1)}°/s</strong></div><div>Control effort<strong>${(terms.effort*100).toFixed(1)}%</strong></div>`;
+$('pidTerms').innerHTML=[['P',terms.p],['I',terms.i],['D',terms.d],['Total',terms.effort]].map(([n,v])=>`<div>${n} contribution<strong>${v.toFixed(3)}</strong></div>`).join('');
+const base=clamp(axes.throttle/100,.05,.95),left=clamp(base+terms.effort/2,0,1),right=clamp(base-terms.effort/2,0,1);
+$('pidMotors').innerHTML=[left,right,left,right].map((v,i)=>`<div>M${i+1} · ${i%2?'Right':'Left'}<strong style="display:block">${(v*100).toFixed(1)}%</strong><div class="track"><div class="fill" style="width:${v*100}%"></div></div></div>`).join('')}
+let acc=0;function frame(now){let elapsed=Math.min(.08,(now-last)/1000);last=now;if(!paused){acc+=elapsed;let steps=0;while(acc>=.01&&steps<10){step(.01);stepPitch(.01);acc-=.01;steps++}}if(!$('pidlab').hidden){draw();drawPitch();readout()}requestAnimationFrame(frame)}
+gains();refreshStick();requestAnimationFrame(frame);
+})();
+</script>
+<script>
+/* Shared Mode 2 visual controller, synchronized with the six existing lessons.
+   The roll-axis lessons use actual shared stick commands; tilt and failure
+   displays explicitly identify their controls as parameters, not pilot axes. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const lessonIds=['mix','tilt','stabilization','feedback','failure','pidlab'];
+ const state={throttle:50,yaw:0,pitch:0,roll:0};
+ const panels=[...document.querySelectorAll('.shared-controller')];
+ const markup=`<h3>Mode 2 · pilot input</h3>
+ <p class="ctrl-help">Drag the sticks, or use the lesson controls below. The visual controller updates in both directions where the lesson accepts stick input.</p>
+ <div class="ctrl-row"><svg viewBox="0 0 340 194" aria-label="Interactive Mode 2 radio controller">
+ <path d="M48 36 Q48 20 66 20 H274 Q292 20 292 36 L321 155 Q324 176 301 177 H39 Q16 176 19 155 Z" fill="#34465b" stroke="#91a7ba" stroke-width="3"/>
+ <path d="M75 22 V4 H90 V22 M251 22 V4 H266 V22" stroke="#8298ad" stroke-width="8"/>
+ <circle cx="106" cy="99" r="49" fill="#102236" stroke="#7695aa" stroke-width="3"/><circle cx="234" cy="99" r="49" fill="#102236" stroke="#7695aa" stroke-width="3"/>
+ <path d="M64 99 H148 M106 57 V141 M192 99 H276 M234 57 V141" stroke="#7890a5" stroke-width="1.5" stroke-dasharray="4 5"/>
+ <circle data-hit="left" cx="106" cy="99" r="48" fill="transparent"/>
+ <circle data-hit="right" cx="234" cy="99" r="48" fill="transparent"/>
+ <circle data-dot="left" cx="106" cy="99" r="13" fill="#77e2bf" stroke="#e6fff5" stroke-width="2" pointer-events="none"/>
+ <circle data-dot="right" cx="234" cy="99" r="13" fill="#77e2bf" stroke="#e6fff5" stroke-width="2" pointer-events="none"/>
+ <text x="106" y="166" fill="#e3eef7" font-size="10" text-anchor="middle">THROTTLE / YAW</text>
+ <text x="234" y="166" fill="#e3eef7" font-size="10" text-anchor="middle">PITCH / ROLL</text>
+ <text x="170" y="42" fill="#7be6c6" font-size="10" text-anchor="middle">MODE 2</text></svg>
+ <div><div class="ctrl-readout">Throttle <strong data-val="throttle"></strong><br>Yaw <strong data-val="yaw"></strong><br>Pitch <strong data-val="pitch"></strong><br>Roll <strong data-val="roll"></strong></div>
+ <div class="ctrl-btns"><button type="button" data-center="right">Release right stick</button><button type="button" data-center="all">Reset sticks</button></div>
+ <div class="ctrl-status" aria-live="polite"></div></div></div>`;
+ panels.forEach((p,i)=>{p.innerHTML=markup;
+  const id=Number(p.dataset.lesson);
+  const status=p.querySelector('.ctrl-status');
+  status.textContent=id===2?'Right-stick pitch ↔ tilt-angle slider. Left-stick throttle ↔ collective-thrust slider. These are idealized teaching mappings, not DJI altitude-hold behavior.':
+   id===5?'Motor health and headroom are aircraft parameters, not stick inputs. This controller is a visual reference; the failure solver uses its own controls.':
+   id===6?'This mirrors the PID lesson’s controller. Both controller views stay synchronized.':
+   'Move a stick to issue a lesson command, or use the lesson slider/preset to see the matching stick movement.';
+  p.querySelectorAll('[data-hit]').forEach(hit=>{
+   let active=false;
+   const move=e=>{
+    if(!active)return;
+    const svg=p.querySelector('svg'),rect=svg.getBoundingClientRect();
+    const x=(e.clientX-rect.left)*340/rect.width, y=(e.clientY-rect.top)*194/rect.height;
+    if(hit.dataset.hit==='left'){
+      state.yaw=clamp(Math.round((x-106)/.40),-100,100);
+      state.throttle=clamp(Math.round(50+(99-y)/.8),0,100);
+    }else{
+      state.roll=clamp(Math.round((x-234)/.40),-100,100);
+      state.pitch=clamp(Math.round((99-y)/.40),-100,100);
+    }
+    applyToLesson(id);render();
+   };
+   hit.addEventListener('pointerdown',e=>{active=true;hit.setPointerCapture(e.pointerId);move(e)});
+   hit.addEventListener('pointermove',move);
+   hit.addEventListener('pointerup',()=>active=false);
+   hit.addEventListener('pointercancel',()=>active=false);
+  });
+  p.querySelector('[data-center="right"]').onclick=()=>{state.roll=state.pitch=0;applyToLesson(id);render()};
+  p.querySelector('[data-center="all"]').onclick=()=>{state.roll=state.pitch=state.yaw=0;state.throttle=50;applyToLesson(id);render()};
+ });
+ function setSlider(id,val){
+  const el=$(id);if(!el)return;
+  el.value=clamp(val,Number(el.min||0),Number(el.max||100));
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+ }
+ function selectMixer(index){
+  const buttons=$('moves')?.querySelectorAll('button');
+  if(buttons&&buttons[index])buttons[index].click();
+ }
+ function applyToLesson(id){
+  if(id===1){
+   const a=[Math.abs(state.throttle-50)/50,Math.abs(state.yaw)/100,Math.abs(state.pitch)/100,Math.abs(state.roll)/100];
+   const max=Math.max(...a);
+   let index=0;
+   if(max>.07){
+    if(a[3]===max)index=state.roll>0?5:6;
+    else if(a[2]===max)index=state.pitch>0?3:4;
+    else if(a[1]===max)index=state.yaw>0?7:8;
+    else index=state.throttle>50?1:2;
+   }
+   selectMixer(index);
+  }else if(id===2){
+   setSlider('angle',Math.round(state.pitch*.45));setSlider('thrust',Math.round(state.throttle*2));
+  }else if(id===3)setSlider('rollStick',state.roll);
+  else if(id===4)setSlider('fbStick',state.roll);
+  else if(id===6){
+   // The existing PID radio owns its simulation state. Use its existing
+   // drag handling by dispatching pointer events at its SVG hit targets.
+   const svg=$('pidRadio'),target=$('pidRightHit');
+   if(svg&&target){
+    const rect=svg.getBoundingClientRect();
+    if(rect.width>0){
+     const x=303+state.roll*.55,y=123-state.pitch*.55;
+     const cx=rect.left+x/440*rect.width,cy=rect.top+y/245*rect.height;
+     const opts={bubbles:true,clientX:cx,clientY:cy,pointerId:98,pointerType:'mouse'};
+     target.dispatchEvent(new PointerEvent('pointerdown',opts));
+     target.dispatchEvent(new PointerEvent('pointermove',opts));
+     target.dispatchEvent(new PointerEvent('pointerup',opts));
+    }
+   }
+  }
+ }
+ function syncFromLesson(){
+  const id=lessonIds.findIndex(x=>$(x)&&!$(x).hidden)+1;
+  if(!id)return;
+  if(id===1){
+   const buttons=[...$('moves').querySelectorAll('button')],idx=buttons.findIndex(b=>b.classList.contains('active'));
+   state.roll=idx===5?70:idx===6?-70:0;
+   state.pitch=idx===3?70:idx===4?-70:0;
+   state.yaw=idx===7?70:idx===8?-70:0;
+   state.throttle=idx===1?75:idx===2?25:50;
+  }else if(id===2){
+   state.pitch=Math.round(Number($('angle').value)/.45);
+   state.roll=0;state.yaw=0;state.throttle=Math.round(Number($('thrust').value)/2);
+  }else if(id===3){state.roll=Number($('rollStick').value);state.pitch=0;state.yaw=0;state.throttle=50}
+  else if(id===4){state.roll=Number($('fbStick').value);state.pitch=0;state.yaw=0;state.throttle=50}
+  else if(id===5){state.roll=state.pitch=state.yaw=0;state.throttle=50}
+  else if(id===6){
+   const l=$('pidLeft'),r=$('pidRight');
+   if(l&&r){
+    state.yaw=clamp(Math.round((Number(l.getAttribute('cx'))-137)/.55),-100,100);
+    state.throttle=clamp(Math.round(50+(123-Number(l.getAttribute('cy')))/1.1),0,100);
+    state.roll=clamp(Math.round((Number(r.getAttribute('cx'))-303)/.55),-100,100);
+    state.pitch=clamp(Math.round((123-Number(r.getAttribute('cy')))/.55),-100,100);
+   }
+  }
+  render();
+ }
+ function render(){
+  panels.forEach(p=>{
+   const left=p.querySelector('[data-dot="left"]'),right=p.querySelector('[data-dot="right"]');
+   left.setAttribute('cx',106+state.yaw*.40);left.setAttribute('cy',99+(50-state.throttle)*.8);
+   right.setAttribute('cx',234+state.roll*.40);right.setAttribute('cy',99-state.pitch*.40);
+   ['throttle','yaw','pitch','roll'].forEach(axis=>{
+    p.querySelector('[data-val="'+axis+'"]').textContent=state[axis]+(axis==='throttle'?'%':'%');
+   });
+  });
+ }
+ // Track programmatic slider updates and preset buttons as well as manual input.
+ ['angle','thrust','rollStick','fbStick'].forEach(id=>{
+  const el=$(id);if(el)el.addEventListener('input',()=>queueMicrotask(syncFromLesson));
+ });
+ ['moves','phases'].forEach(id=>{
+  const el=$(id);if(el)el.addEventListener('click',()=>setTimeout(syncFromLesson,0));
+ });
+ document.addEventListener('click',e=>{
+  if(e.target.closest('button')&&!e.target.closest('.shared-controller'))setTimeout(syncFromLesson,40);
+ });
+ // Existing PID controller has its own pointer handlers; mirror its positions.
+ const pid=$('pidRadio');
+ if(pid)pid.addEventListener('pointermove',()=>setTimeout(syncFromLesson,0));
+ setInterval(syncFromLesson,160);
+ render();
+})();
+</script>
+</html>
+<script>
+(function(){
+const e=id=>document.getElementById(id),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+let mode='angle',enabled=true,angle=0,rate=0,torque=0,target=0,error=0,last=performance.now(),kick=0;
+function reset(){angle=0;rate=0;torque=0;target=0;error=0;kick=0;e('fbStick').value=0;refresh()}
+function refresh(){e('fbAngle').classList.toggle('active',mode==='angle');e('fbRate').classList.toggle('active',mode==='rate');e('fbSensor').classList.toggle('active',enabled);e('fbSensor').textContent='Feedback: '+(enabled?'ON':'OFF');e('fbQuestion').textContent=mode==='angle'?'With the stick centered, apply a roll disturbance. Which motors must change to restore level attitude?':'With the stick centered, apply a roll disturbance. What will the controller try to stabilize?';e('fbAnswer').hidden=true}
+e('fbAngle').onclick=()=>{mode='angle';reset()};e('fbRate').onclick=()=>{mode='rate';reset()};e('fbSensor').onclick=()=>{enabled=!enabled;refresh()};e('fbGust').onclick=()=>{rate+=42;kick=1};e('fbReset').onclick=reset;e('fbCenter').onclick=()=>{e('fbStick').value=0};
+e('fbReveal').onclick=()=>{e('fbAnswer').hidden=false;e('fbAnswer').textContent=mode==='angle'?'The gyro reports unwanted roll rate. The attitude controller also sees the bank angle error and requests a corrective roll rate. For a positive/right roll, the right-side motors increase relative to the left-side motors to create a left-restoring moment; the signs reverse for the opposite bank.':'The rate controller uses gyro feedback to oppose unwanted rotation, but it does not demand a level attitude. Once the measured roll rate returns to zero, the aircraft can remain tilted.'};
+function draw(){let c=e('fbCanvas').getContext('2d');c.clearRect(0,0,600,320);c.fillStyle='#102237';c.fillRect(0,0,600,320);for(let y=40;y<320;y+=35){c.strokeStyle='#29445c';c.beginPath();c.moveTo(0,y);c.lineTo(600,y);c.stroke()}c.strokeStyle='#75dfbe';c.setLineDash([6,6]);c.lineWidth=2;c.beginPath();c.moveTo(30,170);c.lineTo(570,170);c.stroke();c.setLineDash([]);c.save();c.translate(300,170);c.rotate(angle*Math.PI/180);c.lineCap='round';c.lineWidth=13;c.strokeStyle='#dce7ef';c.beginPath();c.moveTo(-160,0);c.lineTo(160,0);c.stroke();c.fillStyle='#e3edf5';c.fillRect(-28,-18,56,36);for(let x of [-150,150]){c.strokeStyle='#75dfbe';c.lineWidth=3;c.beginPath();c.ellipse(x,-8,39,8,0,0,Math.PI*2);c.stroke()}c.restore();c.fillStyle='#e3edf5';c.font='bold 19px system-ui';c.textAlign='center';c.fillText(mode==='angle'?'ANGLE · SELF-LEVELING':'ACRO · RATE CONTROL',300,32);c.font='15px system-ui';c.fillText('Roll '+angle.toFixed(1)+'°   |   Gyro '+rate.toFixed(1)+'°/s',300,292);c.fillStyle=enabled?'#75dfbe':'#ffae6c';c.fillText(enabled?'FEEDBACK ACTIVE':'FEEDBACK DISABLED · OPEN LOOP',300,58)}
+function show(){let stick=+e('fbStick').value;let correction=clamp(torque*.24,-28,28);let motors=[100-correction,100+correction,100-correction,100+correction];e('fbStickVal').textContent=stick===0?'Centered (0%)':Math.abs(stick)+'% '+(stick>0?'right':'left');e('fbAngleVal').textContent=angle.toFixed(1)+'°';e('fbGyroVal').textContent=rate.toFixed(1)+'°/s';e('fbTargetVal').textContent=target.toFixed(1)+'°/s';e('fbCmd').textContent=stick+'%';e('fbError').textContent=error.toFixed(1)+'°/s';e('fbMix').textContent=(correction>0?'+':'')+correction.toFixed(1)+'%';e('fbSense').textContent=rate.toFixed(1)+'°/s';e('fbMotors').innerHTML=motors.map((v,i)=>'<div>M'+(i+1)+' · '+(i===0||i===3?'CW':'CCW')+'<br><strong>'+v.toFixed(1)+'%</strong><div class="fbbar"><div style="width:'+v/1.4+'%;background:'+(v>100.5?'#75dfbe':v<99.5?'#ffae6c':'#9bacc0')+'"></div></div></div>').join('');draw()}
+function frame(now){let dt=Math.min(.035,(now-last)/1000);last=now;let stick=+e('fbStick').value/100;target=mode==='angle'?clamp(2.6*(stick*35-angle),-110,110):stick*110;error=target-rate;
+// Feedback off: direct feedforward command, with no gyro/attitude correction.
+let acceleration=enabled?clamp(5.0*error,-360,360):stick*240;
+torque=acceleration/5.0;rate+=acceleration*dt;rate*=Math.exp(-.14*dt);angle=clamp(angle+rate*dt,-170,170);
+if(!e('feedback').hidden)show();requestAnimationFrame(frame)}
+e('tab4').onclick=()=>{for(let id of ['mix','tilt','stabilization'])e(id).hidden=true;e('feedback').hidden=false;for(let i=1;i<=3;i++)e('tab'+i).classList.remove('active');e('tab4').classList.add('active');show()};for(let i=1;i<=3;i++){let b=e('tab'+i),previous=b.onclick;b.onclick=()=>{previous();e('feedback').hidden=true;e('tab4').classList.remove('active')}}refresh();requestAnimationFrame(frame)
+})();
+</script>
+<script>
+(()=>{
+'use strict';
+const get=id=>document.getElementById(id);
+const colors={good:'#75dfbe',warn:'#ffae6c',bad:'#ff7185',neutral:'#a8bed2'};
+const rotor=[{x:-1,y:1,rot:'CW'},{x:1,y:1,rot:'CCW'},{x:-1,y:-1,rot:'CCW'},{x:1,y:-1,rot:'CW'}];
+const A=[[1,1,1,1],[1,-1,1,-1],[-1,-1,1,1],[-1,1,1,-1]];
+function solveLinear(M,b){let n=b.length,a=M.map((r,i)=>[...r,b[i]]);for(let i=0;i<n;i++){let k=i;for(let j=i+1;j<n;j++)if(Math.abs(a[j][i])>Math.abs(a[k][i]))k=j;if(Math.abs(a[k][i])<1e-11)return null;[a[i],a[k]]=[a[k],a[i]];let p=a[i][i];for(let j=i;j<=n;j++)a[i][j]/=p;for(let k2=0;k2<n;k2++)if(k2!==i){let q=a[k2][i];for(let j=i;j<=n;j++)a[k2][j]-=q*a[i][j]}}return a.map(r=>r[n])}
+// Enumerate each motor as free, at zero, or at its maximum. With four motors this is only 81 cases.
+function allocate(eta,maxCommand,yawWeight){let weights=[1.5,3,3,yawWeight],target=[4,0,0,0],best=null;for(let mask=0;mask<81;mask++){let k=mask,u=[0,0,0,0],free=[];for(let i=0;i<4;i++){let state=k%3;k=Math.floor(k/3);if(state===0)free.push(i);else u[i]=state===1?0:maxCommand}let rhs=target.map((t,r)=>t-A[r].reduce((sum,a,i)=>sum+a*eta[i]*u[i],0));if(free.length){let G=free.map(i=>free.map(j=>A.reduce((sum,row,r)=>sum+weights[r]*weights[r]*row[i]*eta[i]*row[j]*eta[j],0)+(i===j?0.000001:0)));let h=free.map(i=>A.reduce((sum,row,r)=>sum+weights[r]*weights[r]*row[i]*eta[i]*rhs[r],0));let x=solveLinear(G,h);if(!x)continue;let feasible=true;free.forEach((i,j)=>{if(x[j]<-1e-7||x[j]>maxCommand+1e-7)feasible=false;u[i]=Math.max(0,Math.min(maxCommand,x[j]))});if(!feasible)continue}let f=u.map((v,i)=>v*eta[i]),actual=A.map(row=>row.reduce((sum,a,i)=>sum+a*f[i],0));let cost=actual.reduce((sum,v,r)=>sum+weights[r]*weights[r]*(v-target[r])**2,0)+1e-6*u.reduce((sum,v)=>sum+v*v,0);if(!best||cost<best.cost)best={u,f,actual,cost}}return best}
+function draw(d,eta,max){let c=get('failCanvas').getContext('2d');c.clearRect(0,0,560,430);c.fillStyle='#122237';c.fillRect(0,0,560,430);for(let i=25;i<560;i+=35){c.strokeStyle='#213c54';c.lineWidth=1;c.beginPath();c.moveTo(i,0);c.lineTo(i,430);c.stroke()}let points=rotor.map(v=>[280+v.x*140,210-v.y*125]);points.forEach(p=>{c.strokeStyle='#748da7';c.lineWidth=18;c.beginPath();c.moveTo(280,210);c.lineTo(...p);c.stroke()});c.fillStyle='#dce7ef';c.beginPath();c.roundRect(250,166,60,88,12);c.fill();c.fillStyle='#183049';c.beginPath();c.moveTo(280,171);c.lineTo(268,193);c.lineTo(292,193);c.closePath();c.fill();c.fillStyle='#75dfbe';c.textAlign='center';c.font='bold 16px system-ui';c.fillText('FRONT ↑',280,26);points.forEach(([x,y],i)=>{let f=d.f[i],u=d.u[i],co=eta[i]===0?colors.bad:u>=max-0.005?colors.warn:colors.good;c.strokeStyle=co;c.lineWidth=3;c.beginPath();c.arc(x,y,48,0,Math.PI*2);c.stroke();c.fillStyle=co;c.globalAlpha=.14;c.fill();c.globalAlpha=1;c.fillStyle='#e9f4ff';c.beginPath();c.ellipse(x,y,41,7,i%2?.6:-.6,0,Math.PI*2);c.fill();c.fillStyle='#102237';c.beginPath();c.arc(x,y,7,0,Math.PI*2);c.fill();c.font='bold 14px system-ui';c.fillStyle='#eaf4ff';c.fillText('M'+(i+1)+' · '+rotor[i].rot,x,y-58);c.fillStyle=co;c.fillText((f*100).toFixed(0)+'% thrust',x,y+72);c.fillStyle='#c0d2e5';c.font='12px system-ui';c.fillText((u*100).toFixed(0)+'% command',x,y+90)});c.font='13px system-ui';c.fillStyle='#b7ccdf';c.fillText('Thrust is relative to a healthy motor at nominal hover.',280,414)}
+function refresh(){let idx=+get('failedMotor').value,health=+get('health').value,max=+get('headroom').value/100,yawW=+get('yawPriority').value,eta=[1,1,1,1];eta[idx]=health/100;get('healthVal').textContent=health+'%';get('headroomVal').textContent=Math.round(max*100)+'%';get('yawPriorityVal').textContent=yawW<1?'Low':yawW>1?'High':'Equalized';let d=allocate(eta,max,yawW);if(!d)return;draw(d,eta,max);get('failMotors').innerHTML=d.u.map((u,i)=>{let f=d.f[i],sat=u>max-.006,co=eta[i]===0?colors.bad:sat?colors.warn:colors.good;return `<div class="failmotor"><b>M${i+1} · ${rotor[i].rot}${i===idx?' · SELECTED':''}</b><strong>${(u*100).toFixed(1)}% command</strong><div class="failbar"><div style="width:${u/max*100}%;background:${co}"></div></div><strong style="color:${co}">${(f*100).toFixed(1)}% actual thrust</strong>Motor health ${(eta[i]*100).toFixed(0)}%${sat?' · AT LIMIT':''}</div>`}).join('');let [lift,roll,pitch,yaw]=d.actual,err=Math.max(Math.abs(lift-4),Math.abs(roll),Math.abs(pitch),Math.abs(yaw)),sat=d.u.some(v=>v>max-.006);let fields=[['Lift achieved',(lift/4*100).toFixed(1)+'%','Target 100%'],['Roll imbalance',roll.toFixed(3),'Target 0'],['Pitch imbalance',pitch.toFixed(3),'Target 0'],['Yaw imbalance',yaw.toFixed(3),'Target 0']];get('failMetrics').innerHTML=fields.map(([n,v,sub])=>`<div>${n}<strong>${v}</strong><small>${sub}</small></div>`).join('');let status=get('failStatus');if(err<.012){status.style.borderColor=colors.good;status.innerHTML='<strong>Balanced hover solution found.</strong> The target lift and all three moment balances are achievable within the selected motor command limits in this ideal model.'}else{status.style.borderColor=colors.warn;status.innerHTML='<strong>Full hover balance unavailable.</strong> The selected control priorities produce residual lift and/or moments. '+(sat?'One or more motors are at the selected command limit. ':'')+'These imbalances indicate unmet control objectives, not a predicted flight path.'}get('failAnswer').hidden=true}
+['failedMotor','health','headroom','yawPriority'].forEach(id=>get(id).addEventListener('input',refresh));get('healthy').onclick=()=>{get('health').value=100;refresh()};get('weak').onclick=()=>{get('health').value=75;refresh()};get('dead').onclick=()=>{get('health').value=0;refresh()};get('failReveal').onclick=()=>get('failAnswer').hidden=!get('failAnswer').hidden;
+get('tab5').onclick=()=>{['mix','tilt','stabilization','feedback','failure'].forEach(id=>get(id).hidden=id!=='failure');for(let i=1;i<=5;i++)get('tab'+i).classList.toggle('active',i===5);refresh()};for(let i=1;i<=4;i++){get('tab'+i).addEventListener('click',()=>{get('failure').hidden=true;get('tab5').classList.remove('active')})}refresh();
+})();
+</script>
+<style>
+.sim-input-bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:10px 0 14px;padding:12px;background:#152c40;border:1px solid #46677d;border-radius:12px}
+.sim-input-bar select{flex:1 1 240px;min-width:0;max-width:390px;background:#0e2639;color:#f0f7ff;border:1px solid #7194a8;border-radius:8px;padding:10px;font:inherit}
+#simInputStatus{color:#7be6c6;font-size:12px}
+</style><section hidden="" id="freeflight">
+<div class="lesson-guide"><div class="guide-kicker">BASIC FLIGHT · EXPLORE</div><h2>Basic Flight Simulator</h2><p>Try both sticks together. Watch how the aircraft moves through a simplified world. Compare a stabilized DJI-style drone with an FPV drone in Angle and Acro modes.</p><p><strong>Challenge:</strong> Fly forward, turn, then stop. How does the stopping behavior change between modes?</p><small>Educational simulation, not DJI or Betaflight firmware. No collision model, GPS, wind, or real aircraft performance data.</small></div>
+<div class="sim-toolbar">
+<div aria-label="Aircraft type" class="sim-mode-group" role="group"><button class="sim-selected" id="simDji" type="button">DJI-style · stabilized</button><button id="simFpv" type="button">FPV drone</button></div>
+<div aria-label="FPV flight mode" class="sim-mode-group" id="simFpvModes" role="group" hidden><button class="sim-selected" id="simAngle" type="button">Angle</button><button id="simAcro" type="button">Acro / Rate</button></div>
+<div class="sim-mode-group"><button id="simReset" type="button">Reset flight</button><button id="simPause" type="button">Pause</button></div>
+</div>
+<div class="sim-input-bar"><label for="simInputMethod"><strong>Control method</strong></label>
+<select id="simInputMethod" aria-label="Simulator control method">
+<option value="hybrid" selected>Keyboard + mouse (recommended)</option>
+<option value="keyboard">Keyboard only</option>
+<option value="gamepad">USB / Bluetooth game controller</option>
+<option value="touch">Touchscreen / virtual sticks</option>
+</select><button type="button" id="simInputInfo" class="sim-help-button" aria-label="Show instructions for selected control method" aria-expanded="false" aria-controls="simInputDetails" title="How to use this control method">?</button><span id="simInputStatus" role="status">Keyboard + mouse ready</span></div>
+<div id="simInputDetails" class="sim-input-details" hidden role="region" aria-label="Control method instructions"></div>
+<div class="sim-grid">
+<div class="sim-stick-panel"><h3>Mode 2 · move both sticks</h3><p class="sim-hint">Drag the pads simultaneously (multitouch supported). The right stick springs to center when released. Yaw springs to center; throttle behavior depends on aircraft mode.</p>
+<svg aria-label="Two-stick Mode 2 controller" id="simRadio" role="img" style="touch-action:none;width:100%;max-width:480px" viewbox="0 0 440 250">
+<path d="M46 37 Q46 20 65 20 H375 Q394 20 394 37 L433 202 Q435 225 411 226 H29 Q5 225 7 202 Z" fill="#34465b" stroke="#8297a9" stroke-width="4"></path>
+<path d="M90 22 V5 H109 V22 M330 22 V5 H349 V22" stroke="#8297a9" stroke-width="9"></path>
+<circle cx="137" cy="122" fill="#102236" r="73" stroke="#7896a9" stroke-width="3"></circle>
+<circle cx="303" cy="122" fill="#102236" r="73" stroke="#7896a9" stroke-width="3"></circle>
+<path d="M75 122 H199 M137 60 V184 M241 122 H365 M303 60 V184" stroke="#718ba1" stroke-dasharray="5 6"></path>
+<circle cx="137" cy="122" data-pad="left" fill="transparent" r="75"></circle>
+<circle cx="303" cy="122" data-pad="right" fill="transparent" r="75"></circle>
+<circle cx="137" cy="122" fill="#7be6c6" id="simLeft" pointer-events="none" r="16" stroke="#e7fff7" stroke-width="3"></circle>
+<circle cx="303" cy="122" fill="#7be6c6" id="simRight" pointer-events="none" r="16" stroke="#e7fff7" stroke-width="3"></circle>
+<text fill="#edf8ff" font-size="12" text-anchor="middle" x="137" y="213">THROTTLE / YAW</text>
+<text fill="#edf8ff" font-size="12" text-anchor="middle" x="303" y="213">PITCH / ROLL</text></svg>
+<div aria-live="off" class="sim-axes" id="simAxes"></div>
+<div class="sim-presets"><button id="simCenter" type="button">Center right stick</button><button id="simHover" type="button">Level / hover</button><button id="simForward" type="button">Forward input</button><button id="simTurn" type="button">Yaw right</button></div>
+<p class="sim-hint" id="simInputHelp">W/S = throttle (holds position), A/D = yaw; drag the right virtual stick with the mouse for pitch/roll. The mouse and keyboard work together.</p>
+</div>
+<div class="sim-view-panel"><div class="sim-view-header"><h3>Aircraft response · retro landscape</h3><span id="simStatus">Ready</span></div>
+<canvas aria-label="Animated aircraft and world" height="540" id="simCanvas" width="880"></canvas>
+<div class="sim-telemetry" id="simTelemetry"></div>
+<p class="sim-hint" id="simModeExplain">DJI-style: right stick requests a tilt angle; centered throttle commands altitude hold in this simplified model.</p>
+</div>
+</div>
+<div class="sim-footer"><strong>Try this:</strong> Start with DJI-style Angle mode. Push the right stick forward, then release. Next switch to FPV Acro and repeat. Compare attitude, drift, and how quickly you can stop. <button id="simHome" type="button">← All lessons</button></div>
+</section><script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const tabs=['home','mix','tilt','stabilization','feedback','failure','pidlab','freeflight'];
+function showSim(){tabs.forEach(id=>{const el=$(id);if(el)el.hidden=id!=='freeflight'});document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));$('tabSim').classList.add('active');window.scrollTo(0,0)}
+$('tabSim').addEventListener('click',showSim);
+$('openSimHome').addEventListener('click',showSim);
+$('simHome').addEventListener('click',()=>$('tabHome').click());
+document.querySelectorAll('nav button:not(#tabSim)').forEach(b=>b.addEventListener('click',()=>{$('freeflight').hidden=true;$('tabSim').classList.remove('active')}));
+document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>{$('freeflight').hidden=true;$('tabSim').classList.remove('active')}));
+let aircraft='dji',flightMode='angle',paused=false;
+const axes={throttle:50,yaw:0,pitch:0,roll:0};
+const sim={x:0,y:0,z:3,vx:0,vy:0,vz:0,roll:0,pitch:0,yaw:0,rollRate:0,pitchRate:0,yawRate:0};
+const keyset=new Set(),pads={left:null,right:null};
+let inputMethod='hybrid',gamepadIndex=null;
+const methodHelp={
+ hybrid:'W/S = throttle (holds position), A/D = yaw; drag the RIGHT virtual stick with the mouse for pitch/roll. Both work simultaneously.',
+ keyboard:'W/S = throttle (holds position), A/D = yaw; arrow keys = pitch and roll. Hold multiple keys together.',
+ gamepad:'Connect a standard dual-stick controller and press any button. Left stick = yaw/throttle; right stick = roll/pitch. Controller mapping varies; use the live stick indicators to check axes.',
+ touch:'Use two fingers to drag both virtual sticks simultaneously. FPV throttle holds its last position on release.'
+};
+function changeInput(method){
+ inputMethod=method;keyset.clear();pads.left=pads.right=null;
+ axes.yaw=axes.roll=axes.pitch=0;
+ if(aircraft==='dji')axes.throttle=50;
+ $('simInputHelp').textContent=methodHelp[method];
+ $('simInputStatus').textContent=method==='gamepad'?'Waiting for game controller…':({hybrid:'Keyboard + mouse ready',keyboard:'Keyboard ready',touch:'Touch controls ready'})[method];
+ renderRadio();
+ $('simInputMethod').blur();
+}
+$('simInputMethod').addEventListener('change',e=>changeInput(e.target.value));
+const detailedHelp={
+ hybrid:'<strong>Keyboard + mouse</strong><p><kbd>W</kbd> increases throttle, <kbd>S</kbd> decreases throttle, <kbd>A</kbd> yaws left, <kbd>D</kbd> yaws right. Click and drag the <strong>right stick</strong> with your mouse for pitch (up/down) and roll (left/right). You can also drag the left stick with the mouse when needed. Hold keys while dragging to control both sticks together. FPV throttle stays where you set it; DJI-style throttle returns to center after you release W/S.</p>',
+ keyboard:'<strong>Keyboard only</strong><p><kbd>W</kbd>/<kbd>S</kbd> adjust throttle; <kbd>A</kbd>/<kbd>D</kbd> control yaw. <kbd>↑</kbd>/<kbd>↓</kbd> control pitch; <kbd>←</kbd>/<kbd>→</kbd> control roll. Hold multiple keys at once. FPV throttle stays at its last setting; pitch, roll, and yaw return to neutral on release.</p>',
+ gamepad:'<strong>USB / Bluetooth game controller</strong><p>Connect a controller, select this method, and press a button to activate it. <strong>Left stick:</strong> up/down throttle, left/right yaw. <strong>Right stick:</strong> up/down pitch, left/right roll. Watch the on-screen stick indicators to verify your device’s axis mapping. Standard Gamepad mapping is assumed; some devices differ.</p>',
+ touch:'<strong>Touchscreen</strong><p>Touch and drag the <strong>left virtual stick</strong> for throttle/yaw and the <strong>right virtual stick</strong> for pitch/roll. Two fingers can move both sticks simultaneously. Pitch/roll/yaw spring back to center when released; FPV throttle holds its last setting.</p>'
+};
+function updateInputDetails(){
+ $('simInputDetails').innerHTML=detailedHelp[inputMethod];
+}
+$('simInputInfo').addEventListener('click',()=>{
+ const details=$('simInputDetails'),willOpen=details.hidden;
+ updateInputDetails();details.hidden=!willOpen;
+ $('simInputInfo').setAttribute('aria-expanded',String(willOpen));
+});
+$('simInputMethod').addEventListener('change',updateInputDetails);
+updateInputDetails();
+function renderRadio(){
+ $('simLeft').setAttribute('cx',137+axes.yaw*.55);$('simLeft').setAttribute('cy',122+(50-axes.throttle)*1.1);
+ $('simRight').setAttribute('cx',303+axes.roll*.55);$('simRight').setAttribute('cy',122-axes.pitch*.55);
+ $('simAxes').innerHTML=Object.entries(axes).map(([k,v])=>`<div><small>${k.toUpperCase()}</small><strong>${Math.round(v)}%</strong></div>`).join('');
+}
+const svg=$('simRadio');
+function movePad(e,side){
+ const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;
+ const mat=svg.getScreenCTM();if(!mat)return;
+ const q=p.matrixTransform(mat.inverse()),cx=side==='left'?137:303;
+ const x=clamp((q.x-cx)/55,-1,1),y=clamp((122-q.y)/55,-1,1);
+ if(side==='left'){axes.yaw=x*100;axes.throttle=(y+1)*50}
+ else {axes.roll=x*100;axes.pitch=y*100}
+ renderRadio();
+}
+svg.querySelectorAll('[data-pad]').forEach(el=>{
+ const side=el.dataset.pad;
+ el.addEventListener('pointerdown',e=>{if(inputMethod==='gamepad')return;e.preventDefault();pads[side]=e.pointerId;el.setPointerCapture(e.pointerId);movePad(e,side)});
+ el.addEventListener('pointermove',e=>{if(pads[side]===e.pointerId)movePad(e,side)});
+ function release(e){if(pads[side]!==e.pointerId)return;pads[side]=null;if(side==='right'){axes.roll=0;axes.pitch=0}else{axes.yaw=0;if(aircraft==='dji')axes.throttle=50}renderRadio()}
+ el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);
+});
+function setMode(type,mode){
+ aircraft=type;flightMode=mode;
+ $('simDji').classList.toggle('sim-selected',type==='dji');$('simFpv').classList.toggle('sim-selected',type==='fpv');
+ $('simAngle').classList.toggle('sim-selected',mode==='angle');$('simAcro').classList.toggle('sim-selected',mode==='acro');
+ $('simAcro').disabled=type==='dji';
+ $('simFpvModes').hidden=type!=='fpv';
+ $('simModeExplain').textContent=type==='dji'?'DJI-style stabilized: Angle self-levels on stick release, yaw commands turn rate, and centered throttle approximately holds altitude. Momentum can cause continued drift.':mode==='angle'?'FPV Angle: right stick commands tilt, returning it to center levels the aircraft. Throttle is manual; neutral stick does not guarantee hover.':'FPV Acro / Rate: right stick commands angular rates, not a target tilt. Centering stops rotation, but does not automatically level the aircraft. Throttle is manual.';
+ axes.roll=axes.pitch=axes.yaw=0;axes.throttle=50;renderRadio();
+}
+$('simDji').onclick=()=>setMode('dji','angle');
+$('simFpv').onclick=()=>setMode('fpv','angle');
+$('simAngle').onclick=()=>setMode(aircraft,'angle');
+$('simAcro').onclick=()=>{if(aircraft==='fpv')setMode('fpv','acro')};
+$('simCenter').onclick=()=>{axes.roll=axes.pitch=axes.yaw=0;renderRadio()};
+$('simHover').onclick=()=>{axes.roll=axes.pitch=axes.yaw=0;axes.throttle=50;renderRadio()};
+$('simForward').onclick=()=>{axes.pitch=65;renderRadio()};
+$('simTurn').onclick=()=>{axes.yaw=60;renderRadio()};
+$('simPause').onclick=()=>{paused=!paused;$('simPause').textContent=paused?'Resume':'Pause'};
+$('simReset').onclick=()=>{Object.assign(sim,{x:0,y:0,z:3,vx:0,vy:0,vz:0,roll:0,pitch:0,yaw:0,rollRate:0,pitchRate:0,yawRate:0});axes.roll=axes.pitch=axes.yaw=0;axes.throttle=50;renderRadio()};
+const validKeys=new Set(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright']);
+window.addEventListener('keydown',e=>{
+ if($('freeflight').hidden||!['hybrid','keyboard'].includes(inputMethod)||['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
+ const k=e.key.toLowerCase();
+ if(validKeys.has(k)){if(document.activeElement===$('simInputMethod'))$('simInputMethod').blur();e.preventDefault();keyset.add(k)}
+});
+window.addEventListener('keyup',e=>{
+ keyset.delete(e.key.toLowerCase());
+ if($('freeflight').hidden)return;
+ if(['hybrid','keyboard'].includes(inputMethod))keyboard(0);
+});
+window.addEventListener('blur',()=>{
+ keyset.clear();axes.roll=axes.pitch=axes.yaw=0;
+ if(aircraft==='dji')axes.throttle=50;
+ renderRadio();
+});
+function keyboard(dt){
+ if(inputMethod==='hybrid'||inputMethod==='keyboard'){
+  if(pads.left===null){
+   axes.yaw=(keyset.has('d')?70:0)-(keyset.has('a')?70:0);
+   if(keyset.has('w'))axes.throttle=clamp(axes.throttle+dt*45,0,100);
+   if(keyset.has('s'))axes.throttle=clamp(axes.throttle-dt*45,0,100);
+   if(aircraft==='dji'&&!keyset.has('w')&&!keyset.has('s'))axes.throttle=50;
+  }
+  if(inputMethod==='keyboard'&&pads.right===null){
+   axes.pitch=(keyset.has('arrowup')?80:0)-(keyset.has('arrowdown')?80:0);
+   axes.roll=(keyset.has('arrowright')?80:0)-(keyset.has('arrowleft')?80:0);
+  }
+ }
+}
+function gamepadPoll(){
+ if(inputMethod!=='gamepad')return;
+ const list=navigator.getGamepads?navigator.getGamepads():[];
+ const pad=Array.from(list).find(p=>p&&p.connected&&p.axes.length>=4);
+ if(!pad){$('simInputStatus').textContent='No controller detected · press a gamepad button';return}
+ gamepadIndex=pad.index;
+ $('simInputStatus').textContent='Connected: '+pad.id.slice(0,52);
+ const dead=v=>Math.abs(v)<.09?0:Math.sign(v)*(Math.abs(v)-.09)/.91;
+ // Standard Gamepad mapping: axes 0/1 = left X/Y; 2/3 = right X/Y.
+ axes.yaw=clamp(dead(pad.axes[0])*100,-100,100);
+ axes.throttle=clamp((1-dead(pad.axes[1]))*50,0,100);
+ axes.roll=clamp(dead(pad.axes[2])*100,-100,100);
+ axes.pitch=clamp(-dead(pad.axes[3])*100,-100,100);
+}
+function step(dt){
+ const lerp=(a,b,k)=>a+(b-a)*Math.min(1,k*dt);
+ const targetRoll=axes.roll*.0045,targetPitch=axes.pitch*.0045;
+ if(flightMode==='angle'){
+   sim.rollRate=lerp(sim.rollRate,clamp((targetRoll-sim.roll)*5,-2,2),10);
+   sim.pitchRate=lerp(sim.pitchRate,clamp((targetPitch-sim.pitch)*5,-2,2),10);
+ }else{
+   sim.rollRate=lerp(sim.rollRate,axes.roll*.023,9);
+   sim.pitchRate=lerp(sim.pitchRate,axes.pitch*.023,9);
+ }
+ sim.yawRate=lerp(sim.yawRate,axes.yaw*.014,8);
+ sim.roll=clamp(sim.roll+sim.rollRate*dt,-1.35,1.35);
+ sim.pitch=clamp(sim.pitch+sim.pitchRate*dt,-1.35,1.35);
+ sim.yaw+=sim.yawRate*dt;
+ const sn=Math.sin(sim.yaw),cs=Math.cos(sim.yaw);
+ const forward=9*Math.sin(sim.pitch),right=9*Math.sin(sim.roll);
+ const ax=sn*forward+cs*right,ay=cs*forward-sn*right;
+ const drag=aircraft==='dji'?0.9:0.28;
+ sim.vx+=(ax-drag*sim.vx)*dt;sim.vy+=(ay-drag*sim.vy)*dt;
+ sim.x+=sim.vx*dt;sim.y+=sim.vy*dt;
+ const tiltLift=Math.max(.1,Math.cos(sim.roll)*Math.cos(sim.pitch));
+ let az;
+ if(aircraft==='dji')az=(axes.throttle-50)*.24-(1-tiltLift)*4-sim.vz*1.25;
+ else az=9.81*(axes.throttle/50*tiltLift-1)-sim.vz*.22;
+ sim.vz+=az*dt;sim.z+=sim.vz*dt;
+ if(sim.z<.25){sim.z=.25;sim.vz=Math.max(0,sim.vz)}
+ if(sim.z>70){sim.z=70;sim.vz=Math.min(0,sim.vz)}
+}
+const canvas=$('simCanvas'),ctx=canvas.getContext('2d');
+function draw(){
+ const w=880,h=540;ctx.clearRect(0,0,w,h);
+ // Retro low-poly landscape with perspective-scaled objects and optical flow.
+ const horizon=265+Math.max(-24,Math.min(24,sim.pitch*19));
+ const sky=ctx.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#17466d');sky.addColorStop(.7,'#7db5c4');sky.addColorStop(1,'#d5d2ac');ctx.fillStyle=sky;ctx.fillRect(0,0,w,horizon+2);
+ ctx.fillStyle='#f0d9a2';ctx.beginPath();ctx.arc(720,98,32,0,Math.PI*2);ctx.fill();
+ // Mountain layers drift slowly; near landmarks move rapidly and grow in size.
+ function mountains(color,base,amp,parallax,seed){
+  const shift=sim.x*parallax+sim.yaw*95*parallax;ctx.beginPath();ctx.moveTo(0,horizon+65);
+  for(let x=-25;x<=w+25;x+=12){const q=(x+shift)*.011;const wave=Math.sin(q+seed)*.53+Math.sin(q*2.4+seed*2)*.28+Math.sin(q*.47+seed)*.2;ctx.lineTo(x,base-wave*amp)}
+  ctx.lineTo(w,horizon+70);ctx.lineTo(0,horizon+70);ctx.closePath();ctx.fillStyle=color;ctx.fill();
+ }
+ mountains('#81939b',horizon+5,62,.18,.8);mountains('#5b827c',horizon+31,42,.45,2.1);
+ const grass=ctx.createLinearGradient(0,horizon+27,0,h);grass.addColorStop(0,'#84a975');grass.addColorStop(.5,'#548450');grass.addColorStop(1,'#2c6541');ctx.fillStyle=grass;ctx.fillRect(0,horizon+27,w,h-horizon);
+ // Project world-space ground landmarks relative to aircraft heading. Unlike
+ // a scrolling wallpaper, their size and vertical position vary with distance.
+ const cYaw=Math.cos(sim.yaw),sYaw=Math.sin(sim.yaw),cameraHeight=Math.max(2,sim.z+3);
+ function project(wx,wy){const dx=wx-sim.x,dy=wy-sim.y;const right=dx*cYaw-dy*sYaw;const forward=dx*sYaw+dy*cYaw;const depth=forward+24;if(depth<3||depth>210)return null;const focal=480;return {x:440+right*focal/depth,y:horizon+cameraHeight*focal/depth,scale:focal/depth,depth};}
+ const objects=[];
+ const bx=Math.floor(sim.x/12),by=Math.floor(sim.y/12);
+ for(let ix=bx-16;ix<=bx+16;ix++)for(let iy=by-16;iy<=by+16;iy++){
+  const n=Math.sin(ix*127.1+iy*311.7)*43758.5453;const frac=n-Math.floor(n);
+  if(frac<.64)continue;
+  const wx=ix*12+(frac-.5)*7,wy=iy*12+Math.sin(ix*17+iy*3)*3;
+  const p=project(wx,wy);if(p&&p.y<h+55&&p.y>horizon+18&&p.x>-85&&p.x<w+85)objects.push({...p,kind:frac>.94?'tree':frac>.82?'bush':'grass',seed:frac});
+ }
+ objects.sort((a,b)=>b.depth-a.depth);
+ for(const o of objects){const x=o.x,y=o.y,scale=Math.min(4,o.scale);
+  if(o.kind==='tree'){
+   const ht=10*scale;ctx.fillStyle='#4b5e43';ctx.fillRect(x-1.3*scale,y-ht*.5,2.6*scale,ht*.5);
+   ctx.fillStyle='#2f7250';ctx.beginPath();ctx.moveTo(x,y-ht*1.9);ctx.lineTo(x-8*scale,y-ht*.45);ctx.lineTo(x+8*scale,y-ht*.45);ctx.closePath();ctx.fill();
+  }else if(o.kind==='bush'){
+   ctx.fillStyle='#2e6d46';ctx.beginPath();ctx.ellipse(x,y-2.6*scale,6.5*scale,4.5*scale,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#86ae70';ctx.beginPath();ctx.ellipse(x-2*scale,y-4*scale,2.6*scale,1.4*scale,0,0,Math.PI*2);ctx.fill();
+  }else{
+   ctx.strokeStyle='rgba(195,218,141,.65)';ctx.lineWidth=Math.max(1,scale*.65);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-2*scale,y-3.5*scale);ctx.moveTo(x,y);ctx.lineTo(x+2*scale,y-4*scale);ctx.stroke();
+  }
+ }
+ // Two distinctive ground markers move toward the viewer during forward flight.
+ // Their high contrast makes speed and heading changes legible at classroom distance.
+ for(let k=-1;k<=1;k++){
+  for(let j=-2;j<=12;j++){
+   const wx=k*36,wy=j*22;const p=project(wx,wy);if(!p||p.y<horizon+30||p.y>h+15||p.x<-30||p.x>w+30)continue;
+   const r=Math.min(18,Math.max(1.2,p.scale*1.4));ctx.fillStyle='rgba(225,214,148,.75)';ctx.beginPath();ctx.ellipse(p.x,p.y,r*1.8,r*.55,0,0,Math.PI*2);ctx.fill();
+  }
+ }
+ const cx=440,cy=245;
+ const shadowY=Math.min(512,horizon+cameraHeight*7);ctx.fillStyle='rgba(12,44,31,.26)';ctx.beginPath();ctx.ellipse(cx,shadowY,Math.max(16,58-sim.z*.4),11,0,0,Math.PI*2);ctx.fill();
+ // Consumer camera-drone silhouette based on the supplied rear-view reference.
+ // Broad horizontal arms, slim silver shell, raised motors and four propellers.
+ // The body banks and pitches with the simulated aircraft.
+ ctx.save();ctx.translate(cx,cy);
+ ctx.rotate(sim.roll*.7);
+ const noseDip=Math.sin(sim.pitch)*18;
+ ctx.translate(0,noseDip);
+ const foreshorten=Math.max(.62,Math.cos(sim.pitch*.55));
+ ctx.scale(1,foreshorten);
+ ctx.lineCap='round';ctx.lineJoin='round';
+ // Far/front arms are higher and slightly narrower in this rear three-quarter view.
+ const motors=[[-118,-30],[118,-30],[-156,16],[156,16]];
+ // Arm understructure and silver arm tops.
+ motors.forEach(([x,y],i)=>{
+   ctx.strokeStyle='#43525b';ctx.lineWidth=i<2?13:18;
+   ctx.beginPath();ctx.moveTo(x*.19,12);ctx.lineTo(x,y+6);ctx.stroke();
+   ctx.strokeStyle=i<2?'#c3ccd0':'#dce2e3';ctx.lineWidth=i<2?9:12;
+   ctx.beginPath();ctx.moveTo(x*.22,7);ctx.lineTo(x,y);ctx.stroke();
+ });
+ // Thin landing legs under the rear arms.
+ ctx.strokeStyle='#4c5960';ctx.lineWidth=5;
+ [-1,1].forEach(sign=>{ctx.beginPath();ctx.moveTo(sign*113,12);ctx.lineTo(sign*120,34);ctx.lineTo(sign*130,38);ctx.stroke()});
+ // Raised motor housings and propeller blades: two blades on each motor.
+ motors.forEach(([x,y],i)=>{
+   ctx.fillStyle='#555e62';ctx.beginPath();ctx.roundRect(x-11,y-13,22,20,6);ctx.fill();
+   ctx.fillStyle='#c4ccce';ctx.beginPath();ctx.ellipse(x,y-13,10,5,0,0,Math.PI*2);ctx.fill();
+   const py=y-18;
+   ctx.strokeStyle='#202b31';ctx.lineWidth=4;
+   ctx.beginPath();ctx.moveTo(x-39,py+7);ctx.quadraticCurveTo(x-20,py+1,x,py);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(x,py);ctx.quadraticCurveTo(x+19,py-5,x+39,py-7);ctx.stroke();
+ });
+ // Rear camera-drone body: compact and nearly rectangular, unlike a top-view quad.
+ ctx.fillStyle='#56636b';ctx.beginPath();ctx.roundRect(-30,-21,60,47,10);ctx.fill();
+ const shell=ctx.createLinearGradient(-40,-27,43,38);
+ shell.addColorStop(0,'#f3f5f3');shell.addColorStop(.52,'#c7d0d3');shell.addColorStop(1,'#8d9da5');
+ ctx.fillStyle=shell;ctx.beginPath();ctx.roundRect(-28,-23,56,45,9);ctx.fill();
+ // Distinct rear battery hatch, small vents and dark underside.
+ ctx.fillStyle='#e7eceb';ctx.beginPath();ctx.roundRect(-22,-17,44,19,6);ctx.fill();
+ ctx.strokeStyle='#899aa2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-18,5);ctx.lineTo(18,5);ctx.stroke();
+ ctx.fillStyle='#7e919b';ctx.beginPath();ctx.roundRect(-21,11,42,9,4);ctx.fill();
+ ctx.fillStyle='#34454f';ctx.beginPath();ctx.roundRect(-22,20,44,11,4);ctx.fill();
+ // Two downward-facing vision sensors in the rear underside.
+ [-13,13].forEach(x=>{ctx.fillStyle='#192a32';ctx.beginPath();ctx.arc(x,25,3,0,Math.PI*2);ctx.fill()});
+ ctx.fillStyle='#f1a783';ctx.fillRect(-24,12,5,3);ctx.fillRect(19,12,5,3);
+ ctx.restore();
+ // HUD kept separate from drone and background
+ ctx.fillStyle='rgba(11,34,49,.68)';ctx.beginPath();ctx.roundRect(14,13,265,53,10);ctx.fill();
+ ctx.fillStyle='#eaf6ff';ctx.font='bold 16px sans-serif';ctx.fillText('BASIC FLIGHT · CHASE VIEW',25,34);
+ ctx.font='12px sans-serif';ctx.fillStyle='#b7d7e5';ctx.fillText('Simple retro landscape · moving terrain',25,53);
+ ctx.fillStyle='rgba(11,34,49,.72)';ctx.beginPath();ctx.roundRect(720,13,145,53,10);ctx.fill();
+ ctx.fillStyle='#7be6c6';ctx.font='bold 15px sans-serif';ctx.fillText('ALT '+sim.z.toFixed(1)+' m',733,34);
+ ctx.fillStyle='#eaf6ff';ctx.font='12px sans-serif';ctx.fillText('SPD '+Math.hypot(sim.vx,sim.vy).toFixed(1)+' m/s',733,52);
+ const speed=Math.hypot(sim.vx,sim.vy);
+ $('simTelemetry').innerHTML=[
+ ['ALTITUDE',sim.z.toFixed(1)+' m'],['GROUND SPEED',speed.toFixed(1)+' m/s'],
+ ['ROLL',(sim.roll*180/Math.PI).toFixed(0)+'°'],['PITCH',(sim.pitch*180/Math.PI).toFixed(0)+'°'],
+ ['YAW',((sim.yaw*180/Math.PI%360+360)%360).toFixed(0)+'°'],['CLIMB RATE',sim.vz.toFixed(1)+' m/s'],
+ ['FORWARD INPUT',Math.round(axes.pitch)+'%'],['THROTTLE',Math.round(axes.throttle)+'%']
+ ].map(([k,v])=>`<div><small>${k}</small><strong>${v}</strong></div>`).join('');
+ $('simStatus').textContent=paused?'Paused':aircraft==='dji'?'DJI-style · Angle':'FPV · '+(flightMode==='angle'?'Angle':'Acro');
+}
+let last=performance.now(),lastUI=0;
+function tick(now){
+ const dt=Math.min(.04,(now-last)/1000||.016);last=now;
+ if(!$('freeflight').hidden){
+  if(!paused){keyboard(dt);gamepadPoll();for(let t=0;t<dt;t+=.01)step(Math.min(.01,dt-t))}
+  if(now-lastUI>45){draw();renderRadio();lastUI=now}
+ }
+ requestAnimationFrame(tick);
+}
+setMode('dji','angle');renderRadio();requestAnimationFrame(tick);
+})();
+</script>
